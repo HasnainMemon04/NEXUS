@@ -1,0 +1,1750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>NEXUS — CS-2006 Operating Systems Project Report</title>
+<style>
+  @page {
+    size: A4 portrait;
+    margin: 0;
+  }
+
+  :root {
+    --navy: #1B365D;
+    --navy-dark: #132847;
+    --steel: #2E6B9E;
+    --teal: #1F7A70;
+    --rust: #A63A3A;
+    --amber: #9A5B13;
+    --ink: #1F2937;
+    --muted: #52606D;
+    --line: #CBD5E1;
+    --line-soft: #E2E8F0;
+    --tint: #F5F7FA;
+    --tint-blue: #F0F5FA;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: #FFFFFF;
+    color: var(--ink);
+    font-family: "Calibri", "Segoe UI", Arial, sans-serif;
+    font-size: 9.5pt;
+    line-height: 1.42;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .page {
+    width: 210mm;
+    height: 297mm;
+    padding: 13.5mm 16.5mm 13mm 16.5mm;
+    display: flex;
+    flex-direction: column;
+    page-break-after: always;
+    break-after: page;
+    position: relative;
+    overflow: hidden;
+    background: #FFFFFF;
+  }
+  .page:last-child {
+    page-break-after: auto;
+    break-after: auto;
+  }
+
+  /* Running Header & Footer */
+  .run-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 7.8pt;
+    color: var(--muted);
+    border-bottom: 0.75pt solid var(--line);
+    padding-bottom: 3pt;
+    margin-bottom: 9pt;
+    flex-shrink: 0;
+  }
+  .run-head strong { color: var(--navy); font-weight: 600; }
+
+  .content {
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .run-foot {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    font-size: 7.8pt;
+    color: var(--muted);
+    border-top: 0.75pt solid var(--line);
+    padding-top: 4pt;
+    margin-top: auto;
+    flex-shrink: 0;
+  }
+
+  /* Typography */
+  h1 {
+    font-family: "Cambria", "Georgia", "Times New Roman", serif;
+    font-size: 14.5pt;
+    font-weight: 700;
+    color: var(--navy);
+    margin: 0 0 7pt 0;
+    padding-bottom: 3.5pt;
+    border-bottom: 1.25pt solid var(--navy);
+    letter-spacing: 0.01em;
+  }
+  h1 .sec-num {
+    color: var(--steel);
+    margin-right: 5pt;
+  }
+
+  h2 {
+    font-family: "Cambria", "Georgia", "Times New Roman", serif;
+    font-size: 10.7pt;
+    font-weight: 700;
+    color: var(--navy);
+    margin: 7pt 0 3pt 0;
+  }
+
+  h3 {
+    font-family: "Calibri", "Segoe UI", Arial, sans-serif;
+    font-size: 9.6pt;
+    font-weight: 700;
+    color: var(--navy-dark);
+    margin: 6pt 0 2.5pt 0;
+  }
+
+  p {
+    margin: 0 0 4.5pt 0;
+    text-align: justify;
+  }
+
+  ul, ol {
+    margin: 2pt 0 5pt 0;
+    padding-left: 15pt;
+  }
+  li {
+    margin-bottom: 2pt;
+    text-align: justify;
+  }
+
+  code {
+    font-family: "Consolas", "Courier New", monospace;
+    font-size: 8.3pt;
+    background: #F1F5F9;
+    color: #0F172A;
+    padding: 0.5pt 2.5pt;
+    border-radius: 2pt;
+  }
+
+  /* Tables */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 4pt 0 7pt 0;
+    font-size: 8.5pt;
+  }
+  thead th {
+    background: var(--navy);
+    color: #FFFFFF;
+    font-weight: 600;
+    text-align: left;
+    padding: 4pt 5.5pt;
+    border: 0.5pt solid var(--navy);
+    font-size: 8.2pt;
+  }
+  tbody td {
+    padding: 3.5pt 5.5pt;
+    border: 0.5pt solid var(--line);
+    vertical-align: top;
+  }
+  tbody tr:nth-child(even) td {
+    background: var(--tint);
+  }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  td.ctr, th.ctr { text-align: center; }
+  td.key { font-weight: 700; color: var(--navy); white-space: nowrap; }
+
+  /* Callout / Note Box */
+  .note-box {
+    border-left: 2.5pt solid var(--navy);
+    background: var(--tint-blue);
+    padding: 4.5pt 8pt;
+    margin: 4pt 0 5.5pt 0;
+    font-size: 8.6pt;
+    line-height: 1.36;
+  }
+  .note-box.warn {
+    border-left-color: var(--rust);
+    background: #FDF6F6;
+  }
+  .note-box p:last-child { margin-bottom: 0; }
+
+  /* Figures & Screenshots */
+  figure {
+    margin: 5pt 0 7pt 0;
+    padding: 0;
+    text-align: center;
+  }
+  figure img.shot {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+    border: 0.75pt solid #94A3B8;
+    border-radius: 2pt;
+    background: #0B1220;
+  }
+  figure img.photo {
+    display: block;
+    margin: 0 auto;
+    max-width: 100%;
+    height: auto;
+    border: 0.75pt solid #94A3B8;
+    border-radius: 2pt;
+  }
+  figure svg {
+    display: block;
+    margin: 0 auto;
+    width: 100%;
+    height: auto;
+    border: 0.6pt solid var(--line);
+    border-radius: 2pt;
+    background: #FFFFFF;
+  }
+  figcaption {
+    font-size: 8pt;
+    color: var(--muted);
+    margin-top: 3.5pt;
+    text-align: left;
+    line-height: 1.35;
+  }
+  figcaption strong { color: var(--navy); }
+
+  /* Layout Helpers */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10pt;
+    align-items: start;
+  }
+  .grid-2-uneven {
+    display: grid;
+    grid-template-columns: 1.15fr 0.85fr;
+    gap: 10pt;
+    align-items: start;
+  }
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 7pt;
+    margin: 4pt 0 7pt 0;
+  }
+  .kpi-card {
+    border: 0.6pt solid var(--line);
+    border-top: 2pt solid var(--navy);
+    background: var(--tint);
+    padding: 5pt 6.5pt;
+    text-align: center;
+  }
+  .kpi-card .val {
+    font-family: "Cambria", "Georgia", serif;
+    font-size: 13pt;
+    font-weight: 700;
+    color: var(--navy);
+    line-height: 1.15;
+  }
+  .kpi-card .lbl {
+    font-size: 7.5pt;
+    color: var(--muted);
+    margin-top: 2pt;
+  }
+
+  /* Cover Page (Matches FAST-NUCES Institutional Template) */
+  .cover-page {
+    padding: 20mm 20mm 18mm 20mm;
+    font-family: "Cambria", "Georgia", "Times New Roman", serif;
+    justify-content: flex-start;
+    align-items: center;
+    text-align: center;
+  }
+  .cover-logo {
+    width: 38mm;
+    height: 38mm;
+    object-fit: contain;
+    margin-bottom: 10pt;
+  }
+  .cover-uni {
+    font-size: 16.5pt;
+    font-weight: 700;
+    color: var(--navy);
+    letter-spacing: 0.03em;
+    line-height: 1.25;
+    margin: 0 0 5pt 0;
+    text-transform: uppercase;
+  }
+  .cover-school {
+    font-size: 11pt;
+    color: #334155;
+    margin: 0 0 2pt 0;
+  }
+  .cover-dept {
+    font-size: 10.5pt;
+    color: #334155;
+    margin: 0 0 12pt 0;
+  }
+  .cover-rule {
+    width: 100%;
+    border: none;
+    border-top: 0.85pt solid #CBD5E1;
+    margin: 4pt 0 14pt 0;
+  }
+  .cover-course {
+    font-size: 11pt;
+    font-weight: 700;
+    color: var(--navy);
+    letter-spacing: 0.04em;
+    margin: 0 0 3pt 0;
+  }
+  .cover-term {
+    font-size: 10.5pt;
+    font-style: italic;
+    color: #475569;
+    margin: 0 0 18pt 0;
+  }
+  .cover-doc-type {
+    font-size: 24pt;
+    font-weight: 700;
+    color: var(--navy);
+    letter-spacing: 0.04em;
+    margin: 0 0 8pt 0;
+  }
+  .cover-title {
+    font-size: 14.5pt;
+    font-weight: 700;
+    color: #1E293B;
+    line-height: 1.3;
+    max-width: 155mm;
+    margin: 0 auto 6pt auto;
+  }
+  .cover-subtitle {
+    font-size: 10.5pt;
+    font-style: italic;
+    color: #475569;
+    margin: 0 0 18pt 0;
+  }
+  .cover-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 14pt 0;
+    font-family: "Calibri", "Segoe UI", Arial, sans-serif;
+    font-size: 9.6pt;
+    text-align: left;
+  }
+  .cover-table th {
+    background: var(--navy);
+    color: #FFFFFF;
+    font-weight: 600;
+    padding: 5.5pt 8pt;
+    border: 0.6pt solid var(--navy);
+  }
+  .cover-table td {
+    padding: 5.5pt 8pt;
+    border: 0.6pt solid #B8C4D4;
+    color: #1F2937;
+  }
+  .cover-table tr:nth-child(even) td {
+    background: #F4F7FA;
+  }
+  .meta-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: "Calibri", "Segoe UI", Arial, sans-serif;
+    font-size: 9.4pt;
+    text-align: left;
+    border: 0.8pt solid #8A9BB0;
+  }
+  .meta-table td {
+    padding: 5.5pt 8pt;
+    border-bottom: 0.5pt solid #CBD5E1;
+    color: #1F2937;
+  }
+  .meta-table tr:last-child td { border-bottom: none; }
+  .meta-table td.m-lbl {
+    width: 31%;
+    background: #EEF3F8;
+    color: #334155;
+    font-weight: 600;
+    border-right: 0.6pt solid #CBD5E1;
+  }
+  .meta-table td.m-val {
+    background: #FFFFFF;
+  }
+
+  /* TOC styling */
+  .toc-list {
+    list-style: none;
+    padding: 0;
+    margin: 3pt 0 7pt 0;
+  }
+  .toc-item {
+    display: flex;
+    align-items: baseline;
+    margin-bottom: 2.3pt;
+    font-size: 8.9pt;
+  }
+  .toc-item.major { font-weight: 600; color: var(--navy); }
+  .toc-item .dots {
+    flex: 1 1 auto;
+    border-bottom: 0.7pt dotted #94A3B8;
+    margin: 0 6pt;
+  }
+  .toc-item .pg {
+    font-variant-numeric: tabular-nums;
+    color: var(--navy);
+    font-weight: 600;
+  }
+  .code-block {
+    font-family: "Consolas", monospace;
+    font-size: 7.9pt;
+    line-height: 1.38;
+    background: #F8FAFC;
+    border: 0.6pt solid var(--line);
+    border-left: 2.2pt solid var(--steel);
+    padding: 5.5pt 8pt;
+    margin: 4pt 0 6pt 0;
+    white-space: pre;
+    color: #0F172A;
+  }
+  .small-table { font-size: 7.75pt; }
+  .small-table th { font-size: 7.55pt; padding: 2.5pt 4pt; }
+  .small-table td { padding: 2.1pt 4pt; line-height: 1.3; }
+  .ref-list {
+    padding-left: 16pt;
+    font-size: 8.6pt;
+    line-height: 1.4;
+  }
+  .ref-list li { margin-bottom: 3.5pt; }
+</style>
+</head>
+<body>
+
+<!-- ==================== PAGE 1: FAST-NUCES COVER PAGE ==================== -->
+<section class="page cover-page">
+  <img src="assets/fast_logo.png" alt="FAST-NUCES Seal" class="cover-logo">
+  <div class="cover-uni">FAST – National University of<br>Computer and Emerging Sciences</div>
+  <div class="cover-school">FAST School of Computing &middot; Karachi Campus</div>
+  <div class="cover-dept">Department of Cyber Security</div>
+  <hr class="cover-rule">
+
+  <div class="cover-course">CS-2006 &middot; OPERATING SYSTEMS</div>
+  <div class="cover-term">Semester Project &middot; Fall 2026</div>
+
+  <div class="cover-doc-type">PROJECT REPORT</div>
+  <div class="cover-title">NEXUS: A Multithreaded Distributed Task Orchestration Engine on FreeRTOS</div>
+  <div class="cover-subtitle">Project #2 &mdash; Cloud Task Orchestration Engine</div>
+
+  <table class="cover-table">
+    <thead>
+      <tr>
+        <th style="width:18%;">Role</th>
+        <th style="width:44%;">Student name</th>
+        <th style="width:21%;">Roll number</th>
+        <th style="width:17%;">Section</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Leader</td>
+        <td>Muhammad Hasnain Memon</td>
+        <td>24K-2001</td>
+        <td>BCY-5A</td>
+      </tr>
+      <tr>
+        <td>Member 2</td>
+        <td>Akbar Hussain</td>
+        <td>24K-2026</td>
+        <td>BCY-5A</td>
+      </tr>
+      <tr>
+        <td>Member 3</td>
+        <td>Ateeb Ahmed Qureshi</td>
+        <td>24K-2036</td>
+        <td>BCY-5A</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <table class="meta-table">
+    <tr>
+      <td class="m-lbl">Course</td>
+      <td class="m-val">CS-2006 Operating Systems</td>
+    </tr>
+    <tr>
+      <td class="m-lbl">Instructor</td>
+      <td class="m-val">Sandesh Kumar</td>
+    </tr>
+    <tr>
+      <td class="m-lbl">Programme / Semester</td>
+      <td class="m-val">BS Cyber Security &middot; 5th Semester</td>
+    </tr>
+    <tr>
+      <td class="m-lbl">Session</td>
+      <td class="m-val">Fall 2026</td>
+    </tr>
+    <tr>
+      <td class="m-lbl">Project Selection</td>
+      <td class="m-val">Project #2 &middot; Cloud Task Orchestration Engine (NEXUS)</td>
+    </tr>
+    <tr>
+      <td class="m-lbl">Implementation Stack</td>
+      <td class="m-val">C11 &middot; ESP-IDF v6.1 &middot; FreeRTOS SMP &middot; 4&times; Dual-Core ESP32 Cluster</td>
+    </tr>
+    <tr>
+      <td class="m-lbl">GitHub repository</td>
+      <td class="m-val"><a href="https://github.com/HasnainMemon04/NEXUS" style="color:#1B365D; text-decoration:none;">https://github.com/HasnainMemon04/NEXUS</a></td>
+    </tr>
+    <tr>
+      <td class="m-lbl">Date of submission</td>
+      <td class="m-val">November 24, 2026</td>
+    </tr>
+  </table>
+</section>
+
+<!-- ==================== PAGE 2: ABSTRACT & TABLE OF CONTENTS ==================== -->
+<section class="page">
+  <div class="run-head">
+    <span><strong>CS-2006 Operating Systems</strong> &mdash; Project Report</span>
+    <span>NEXUS Task Orchestration Engine</span>
+  </div>
+  <div class="content">
+    <h1>Abstract</h1>
+    <p>This report documents the design, implementation, and empirical evaluation of <strong>NEXUS</strong>, a multithreaded task orchestration engine developed in C11 on FreeRTOS (ESP-IDF v6.1) for CS-2006 Operating Systems (Project #2: Cloud Task Orchestration Engine). The system runs across an offline four-board cluster comprising one dual-core ESP32-S3-N16R8 master coordinator and three dual-core ESP32-D0WD-V3 worker nodes, providing eight active CPU cores with no external router, cloud service, or Python runtime.</p>
+    <p>Every board reuses a shared node engine implementing core operating system primitives: a bounded producer-consumer job queue guarded by a mutex and two counting semaphores, a fixed pool of four reusable executor threads regulated by a live-adjustable counting-semaphore permit cap (<em>K</em> = 1..4), non-blocking asynchronous logging, and sampled FreeRTOS task monitoring. Across boards, the master schedules jobs using six configurable (ordering, placement) policy pairs&mdash;combining FCFS, strict priority, and priority with aging against round-robin and capacity-aware least-loaded placement&mdash;and exchanges framed binary messages over a local Wi-Fi SoftAP.</p>
+    <p>Fault tolerance relies on 500 ms worker heartbeats, 3.0 s failure detection, per-job leases, cooperative execution-budget cancellation, and at-least-once dispatch with exactly-once commit semantics. A single-page operator dashboard gzipped into the master's flash (21,959 bytes) streams live telemetry over WebSockets and visualizes distributed Mandelbrot fractal rendering alongside interactive synchronization laboratories. Over a live 22-minute cluster run, NEXUS committed more than 46,692 jobs with zero failures, balanced 150-tile frames evenly across Workers A, B, and C (52 / 51 / 47), demonstrated 15.9&times; priority-inversion latency reduction via mutex priority inheritance on physical hardware (320 ms vs. 20.1 ms), detected worker failure in 3,024 ms with automatic job requeuing, and achieved up to 2.24&times; remote makespan speedup scaling from one to three workers on 32&times;32 matrix workloads while quantifying Amdahl's Law communication limits against local shared-memory execution.</p>
+
+    <h2>Table of Contents</h2>
+    <ul class="toc-list">
+      <li class="toc-item major"><span>1. Introduction &amp; Project Objectives</span><span class="dots"></span><span class="pg">3</span></li>
+      <li class="toc-item major"><span>2. Hardware Platform &amp; Cluster Architecture</span><span class="dots"></span><span class="pg">4</span></li>
+      <li class="toc-item major"><span>3. Firmware Design, Task Hierarchy &amp; Memory Layout</span><span class="dots"></span><span class="pg">5</span></li>
+      <li class="toc-item major"><span>4. Concurrency, Synchronization &amp; Deadlock Prevention</span><span class="dots"></span><span class="pg">6</span></li>
+      <li class="toc-item major"><span>5. Two-Level Scheduling, Placement &amp; Compute Workloads</span><span class="dots"></span><span class="pg">7</span></li>
+      <li class="toc-item major"><span>6. Message-Passing IPC &amp; Fault Recovery Model</span><span class="dots"></span><span class="pg">8</span></li>
+      <li class="toc-item major"><span>7. Synchronization Laboratory &amp; Fault Injection Results</span><span class="dots"></span><span class="pg">9</span></li>
+      <li class="toc-item major"><span>8. NEXUS Control Center &amp; Live Cluster Operation</span><span class="dots"></span><span class="pg">10</span></li>
+      <li class="toc-item major"><span>9. Experimental Methodology &amp; Automated Verification</span><span class="dots"></span><span class="pg">11</span></li>
+      <li class="toc-item major"><span>10. Physical Hardware Scaling Results &amp; Comparative Analysis</span><span class="dots"></span><span class="pg">12</span></li>
+      <li class="toc-item major"><span>11. Load Distribution, Render Scaling &amp; Resource Headroom</span><span class="dots"></span><span class="pg">13</span></li>
+      <li class="toc-item major"><span>12. Limitations, Engineering Lessons, Conclusion &amp; References</span><span class="dots"></span><span class="pg">14</span></li>
+    </ul>
+
+    <h2>List of Key Figures &amp; Comparative Graphs</h2>
+    <table class="small-table">
+      <thead>
+        <tr>
+          <th style="width:12%;">Figure</th>
+          <th style="width:78%;">Description</th>
+          <th class="ctr" style="width:10%;">Page</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="key">Figure 1</td><td>Physical four-board ESP32 hardware cluster (ESP32-S3 master + three classic ESP32 workers)</td><td class="ctr">4</td></tr>
+        <tr><td class="key">Figure 2</td><td>NEXUS system architecture and two-level FreeRTOS scheduling topology (vector diagram)</td><td class="ctr">4</td></tr>
+        <tr><td class="key">Figure 3</td><td>Live FreeRTOS task monitor, queue contention, and execution permit state on Master</td><td class="ctr">6</td></tr>
+        <tr><td class="key">Figure 4</td><td>Live Job Lifecycle board and Scheduler policy panel under Priority + Aging / Least-Loaded</td><td class="ctr">7</td></tr>
+        <tr><td class="key">Figure 5</td><td>Job lifecycle state machine with retry, lease expiry, and lazy cancellation transitions</td><td class="ctr">7</td></tr>
+        <tr><td class="key">Figure 6</td><td>Framed binary IPC wire format (NX v1) and worker crash-recovery timeline</td><td class="ctr">8</td></tr>
+        <tr><td class="key">Figure 7</td><td>Live Synchronization Lab (Labs A&ndash;D on Worker A) and Fault Injection recovery record</td><td class="ctr">9</td></tr>
+        <tr><td class="key">Figure 8</td><td>Comparison graph: synchronization race loss and priority-inversion blocking latency</td><td class="ctr">9</td></tr>
+        <tr><td class="key">Figure 9</td><td>NEXUS Control Center Cluster Overview rendering Mandelbrot Frame 265 across 4/4 nodes</td><td class="ctr">10</td></tr>
+        <tr><td class="key">Figures 10&ndash;11</td><td>Hardware Benchmarks suite view (T5 Runs 41&ndash;61) and live multi-frame Event Log</td><td class="ctr">11</td></tr>
+        <tr><td class="key">Figures 12&ndash;13</td><td>Comparison graphs: T5 throughput across 0&ndash;3 workers and remote parallel speedup / p95 latency</td><td class="ctr">12</td></tr>
+        <tr><td class="key">Figure 14</td><td>Comparison graph: worker load balance and Mandelbrot render latency across zoom depths</td><td class="ctr">13</td></tr>
+      </tbody>
+    </table>
+  </div>
+  <div class="run-foot">
+    <span>FAST&ndash;NUCES Karachi &middot; Department of Cyber Security</span>
+    <span>Page 2 of 14</span>
+  </div>
+</section>
+
+<!-- ==================== PAGE 3: INTRODUCTION & OBJECTIVES ==================== -->
+<section class="page">
+  <div class="run-head">
+    <span><strong>CS-2006 Operating Systems</strong> &mdash; Project Report</span>
+    <span>1. Introduction &amp; Project Objectives</span>
+  </div>
+  <div class="content">
+    <h1><span class="sec-num">1.</span>Introduction &amp; Project Objectives</h1>
+
+    <h2>1.1 Motivation &amp; Operating Systems Focus</h2>
+    <p>Modern cloud orchestrators coordinate concurrent job streams across shared pools of execution threads while enforcing fairness, resource bounds, and failure recovery. Although production platforms hide these mechanics beneath layers of virtualization and managed runtimes, their correctness depends directly on foundational operating system primitives: mutual exclusion, bounded-buffer synchronization, counting semaphores, priority scheduling with aging, deadlock avoidance, and message-passing interprocess communication (IPC).</p>
+    <p><strong>NEXUS</strong> implements Project #2 (<em>Cloud Task Orchestration Engine</em>) strictly as an operating systems engineering project in <strong>C11</strong> on <strong>FreeRTOS</strong> (ESP-IDF v6.1). An early proposal variant that included a cybersecurity analytics layer was intentionally discarded before implementation so that 100% of firmware complexity, testing, and evaluation targets OS mechanisms rather than application logic. Workloads are deterministic, parameter-seeded compute kernels&mdash;primarily a 600&times;400 Mandelbrot fractal divided into 150 independent 40&times;40 pixel tiles&mdash;so that every scheduling priority, load-balancing decision, semaphore cap, and node failure becomes directly observable and checksum-verifiable.</p>
+
+    <div class="note-box">
+      <p><strong>Architectural Boundary (Threads vs. Processes):</strong> Within each ESP32 board, FreeRTOS tasks operate as kernel-scheduled threads sharing a single physical address space and coordinating via mutexes, semaphores, and spinlocks. Across the four separate boards, nodes occupy isolated physical memories and exchange fixed binary frames over a local TCP link&mdash;directly demonstrating message passing between separate address spaces (Silberschatz <em>OSC 10e</em> &sect;3.4). Moreover, an authoritative <em>Single-Node Mode</em> executes the entire engine locally on the master board with zero network involvement, confirming that the network serves strictly as a message transport rather than the subject of the project.</p>
+    </div>
+
+    <h2>1.2 Requirements Traceability Matrix</h2>
+    <p>Every mandatory requirement (M1&ndash;M4), all five additional features (A1&ndash;A5), and the synchronization verification suite (O8) from the course specification map directly to dedicated C modules inside <code>firmware/components/nexus_core/</code> and <code>firmware/master/main/</code>, as summarized in Table 1.</p>
+
+    <table class="small-table" style="font-size:7.35pt;">
+      <thead>
+        <tr>
+          <th style="width:6%; padding:2pt 3.5pt;">Obj.</th>
+          <th style="width:17%; padding:2pt 3.5pt;">Course Item</th>
+          <th style="width:29%; padding:2pt 3.5pt;">OS Primitive &amp; Implementation</th>
+          <th style="width:23%; padding:2pt 3.5pt;">Source Module</th>
+          <th style="width:25%; padding:2pt 3.5pt;">Verification Evidence</th>
+        </tr>
+      </thead>
+      <tbody style="line-height:1.24;">
+        <tr>
+          <td class="key">O1</td>
+          <td>M1: Shared Job Queue</td>
+          <td>Bounded producer-consumer buffer (256 slots) with <code>q_mtx</code>, <code>sem_free</code>, <code>sem_ready</code></td>
+          <td><code>job_queue.c</code> (<code>jq_submit</code>, <code>jq_pop_best</code>)</td>
+          <td>504,729 mutex ops (4% contention), 99 blocked producers, host + T2 checks</td>
+        </tr>
+        <tr>
+          <td class="key">O2</td>
+          <td>M2: Fixed Pool &amp; M3: Semaphores</td>
+          <td>Fixed pool of <em>N</em> = 4 executor tasks per board gated by counting semaphore <code>sem_slots</code> (<em>K</em> = 1..4)</td>
+          <td><code>exec_pool.c</code> (<code>pool_start</code>, <code>pool_set_slots</code>)</td>
+          <td>Peak concurrency bounded by <em>K</em> in QEMU, Lab C (peak 2/2), and live slots UI</td>
+        </tr>
+        <tr>
+          <td class="key">O3</td>
+          <td>M4: Completion Reporting</td>
+          <td>Job lifecycle states, exactly-once commit per <code>job_id</code>, duplicate rejection, output CRC32</td>
+          <td><code>job_queue.c</code> (<code>jq_commit</code>), <code>stats.c</code></td>
+          <td>46,692 live commits (0 failures, 5 duplicates dropped), identical CRCs across targets</td>
+        </tr>
+        <tr>
+          <td class="key">O4</td>
+          <td>A1: Priority Scheduling</td>
+          <td>3 orderings (FCFS, strict priority, +1/1.5 s aging) &times; 2 placements (RR, least-loaded)</td>
+          <td><code>job_queue.c</code>, <code>cluster.c</code>, <code>placement.h</code></td>
+          <td>Live wait-time plots bounded under aging; balanced tile splits (52 / 51 / 47)</td>
+        </tr>
+        <tr>
+          <td class="key">O5</td>
+          <td>A2: Timeouts &amp; Fault Recovery</td>
+          <td>500 ms heartbeats, 1.5 s SUSPECT, 3.0 s OFFLINE, job leases, cooperative budget cancel, 3 retries</td>
+          <td><code>cluster.c</code> (<code>supervisor_task</code>), <code>kernels.c</code></td>
+          <td>Worker B crash detected in 3,024 ms with 5 jobs requeued; 27 live retries</td>
+        </tr>
+        <tr>
+          <td class="key">O6</td>
+          <td>A3: Dynamic Scaling</td>
+          <td>Live <em>K</em> permit adjustment with ACK, graceful worker drain, master-only local routing</td>
+          <td><code>exec_pool.c</code>, <code>cluster.c</code>, <code>proto.h</code></td>
+          <td>T5 physical scaling across 0, 1, 2, 3 workers (1.79&times;&ndash;2.24&times; remote speedup)</td>
+        </tr>
+        <tr>
+          <td class="key">O7</td>
+          <td>A4: Logging/Monitor &amp; A5: Stats</td>
+          <td>Non-blocking 64-entry ring logger, sampled <code>uxTaskGetSystemState</code>, 4,096-job stats ring + CSV</td>
+          <td><code>logger.c</code>, <code>monitor.c</code>, <code>stats.c</code></td>
+          <td>23 live FreeRTOS tasks sampled at 0.5 s cadence; per-run KPIs and CSV export</td>
+        </tr>
+        <tr>
+          <td class="key">O8</td>
+          <td>Synchronization Laboratory</td>
+          <td>Interactive Labs A&ndash;D: unlocked race, mutex fix, 2-permit semaphore cap, priority inversion</td>
+          <td><code>oslab.c</code> (runs on any board)</td>
+          <td>Worker A live: 103,185 vs 200,000; peak 2/2; 320 ms vs 20.1 ms inheritance</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2 style="margin-top:5pt;">1.3 Design Constraints &amp; Engineering Discipline</h2>
+    <p style="font-size:8.9pt; line-height:1.36;">Four constraints governed development from proposal to final evaluation: (1) firmware is written strictly in C11 on ESP-IDF v6.1 and FreeRTOS with no Python in the repository, and the dashboard uses plain HTML/CSS/JS gzipped into flash with zero CDN dependencies; (2) the cluster operates offline on its own WPA2 20 MHz Wi-Fi SoftAP (<code>NEXUS-OS</code>, <code>192.168.4.1</code>); (3) all queues, framebuffers, stats rings, and scratch buffers are allocated once at boot with zero per-job heap allocation; and (4) every figure in this report comes from verified build logs, QEMU self-tests, or physical four-board runs, clearly separating emulated checks from live hardware measurements.</p>
+  </div>
+  <div class="run-foot">
+    <span>FAST&ndash;NUCES Karachi &middot; Department of Cyber Security</span>
+    <span>Page 3 of 14</span>
+  </div>
+</section>
+
+<!-- ==================== PAGE 4: HARDWARE PLATFORM & SYSTEM ARCHITECTURE ==================== -->
+<section class="page">
+  <div class="run-head">
+    <span><strong>CS-2006 Operating Systems</strong> &mdash; Project Report</span>
+    <span>2. Hardware Platform &amp; Cluster Architecture</span>
+  </div>
+  <div class="content">
+    <h1><span class="sec-num">2.</span>Hardware Platform &amp; Cluster Architecture</h1>
+
+    <h2>2.1 Four-Board Dual-Core Hardware Deployment</h2>
+    <p>While the initial Week 10 proposal outlined a three-node ESP32-S3 topology, the final physical deployment expanded to a heterogeneous <strong>four-board, eight-core cluster</strong>: one <strong>ESP32-S3-N16R8</strong> master coordinator paired with three dual-core classic <strong>ESP32-D0WD-V3</strong> workers (two ESP32 DevKit boards and one ESP32-WROOM-32U module with an external 2.4 GHz antenna). Every board was individually probed over USB with <code>esptool</code> to verify silicon revision, flash capacity, factory MAC address, and dual-core SMP capability (<code>CONFIG_FREERTOS_UNICORE</code> disabled on all targets), as summarized in Table 2.</p>
+
+    <table class="small-table">
+      <thead>
+        <tr>
+          <th style="width:13%;">Cluster Role</th>
+          <th style="width:19%;">Board Model</th>
+          <th style="width:26%;">Verified Chip &amp; Memory</th>
+          <th style="width:19%;">Factory MAC</th>
+          <th style="width:23%;">Session IP &amp; Assignment</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="key">Master</td>
+          <td>ESP32-S3-N16R8</td>
+          <td>Xtensa LX7 Dual-Core 240 MHz, 16 MB flash, 8 MB octal PSRAM</td>
+          <td><code>e0:72:a1:d6:f1:f4</code><br><span style="color:#52606D;font-size:7.3pt;">SoftAP: ...:d6:f1:f5</span></td>
+          <td><code>192.168.4.1</code> (DHCP gateway, TCP port 5005, HTTP/WS port 80)</td>
+        </tr>
+        <tr>
+          <td class="key">Worker (Slot A)</td>
+          <td>ESP32-WROOM-32U</td>
+          <td>ESP32-D0WD-V3 Dual-Core 240 MHz, 4 MB flash, 520 KB SRAM</td>
+          <td><code>14:2b:2f:da:a1:68</code></td>
+          <td><code>192.168.4.3</code> (joined 1st; assigned Slot A by MAC)</td>
+        </tr>
+        <tr>
+          <td class="key">Worker (Slot B)</td>
+          <td>ESP32 DevKit #2</td>
+          <td>ESP32-D0WD-V3 Dual-Core 240 MHz, 4 MB flash, 520 KB SRAM</td>
+          <td><code>8c:94:df:90:c9:68</code></td>
+          <td><code>192.168.4.5</code> (joined 2nd; assigned Slot B by MAC)</td>
+        </tr>
+        <tr>
+          <td class="key">Worker (Slot C)</td>
+          <td>ESP32 DevKit #1</td>
+          <td>ESP32-D0WD-V3 Dual-Core 240 MHz, 4 MB flash, 520 KB SRAM</td>
+          <td><code>78:42:1c:6c:00:f4</code></td>
+          <td><code>192.168.4.4</code> (joined 3rd; assigned Slot C by MAC)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p>All three classic workers run an identical compiled binary (<code>nexus-worker-esp32-flash.bin</code>). Rather than hardcoding static IPs or board roles, workers obtain DHCP leases and transmit their 6-byte factory MAC and a random 32-bit boot <em>incarnation</em> ID upon connecting. The master assigns slots A, B, and C in join order and pins each role to that MAC for the lifetime of the master session so reconnecting boards reclaim their identity cleanly.</p>
+
+    <div class="grid-2-uneven" style="margin-top:2pt;">
+      <figure style="margin:0;">
+        <img src="assets/hardware_cluster.jpg" alt="Physical 4-board ESP32 hardware cluster" class="photo" style="max-height:61mm; width:auto;">
+        <figcaption><strong>Figure 1.</strong> Physical four-board cluster during live execution. Left: ESP32-S3-N16R8 master powered over USB-C. Right: three classic ESP32 workers mounted on a shared breadboard power rail (8 active CPU cores total).</figcaption>
+      </figure>
+      <div>
+        <h3 style="margin-top:0;">Why Four Boards (8 Cores)?</h3>
+        <ul style="font-size:8.35pt; margin-bottom:0; line-height:1.35;">
+          <li><strong>Isolated Failure Domains:</strong> Unplugging or rebooting one worker leaves the remaining nodes operational, enabling true crash detection and task migration.</li>
+          <li><strong>Shared Memory vs. Message Passing:</strong> Contrasts intra-board SMP threads (shared RAM) with inter-board nodes (private address spaces communicating via framed messages).</li>
+          <li><strong>Non-Trivial Placement &amp; Scaling:</strong> Round-robin and least-loaded policies diverge only with multiple targets, and three workers allow 0/1/2/3-node scaling curves in Suite T5.</li>
+          <li><strong>Heterogeneous RAM Fit:</strong> Master holds the 600&times;400 framebuffer and 4,096-job history in 8 MB PSRAM, while workers operate cleanly inside classic ESP32 internal SRAM.</li>
+        </ul>
+      </div>
+    </div>
+
+    <figure style="margin-top:5pt;">
+      <svg viewBox="0 0 760 198" style="max-height:46mm; width:auto; max-width:100%;" xmlns="http://www.w3.org/2000/svg" font-family="Calibri, Segoe UI, Arial, sans-serif">
+        <defs>
+          <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="#1B365D"/>
+          </marker>
+          <marker id="arr-teal" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M0,1 L9,5 L0,9 z" fill="#1F7A70"/>
+          </marker>
+        </defs>
+        <rect x="0" y="0" width="760" height="198" fill="#FFFFFF"/>
+
+        <!-- Browser Client -->
+        <rect x="12" y="54" width="128" height="90" rx="5" fill="#F5F7FA" stroke="#64748B" stroke-width="1.2"/>
+        <text x="76" y="75" text-anchor="middle" font-size="10.5" font-weight="700" fill="#1B365D">Browser Client</text>
+        <text x="76" y="90" text-anchor="middle" font-size="8.6" fill="#334155">Laptop / Phone</text>
+        <line x1="24" y1="98" x2="128" y2="98" stroke="#CBD5E1" stroke-width="0.8"/>
+        <text x="76" y="113" text-anchor="middle" font-size="8.4" fill="#1F2937">NEXUS Control Center</text>
+        <text x="76" y="126" text-anchor="middle" font-size="8" fill="#52606D">http://192.168.4.1/</text>
+        <text x="76" y="138" text-anchor="middle" font-size="7.8" fill="#52606D">21.9 KB gzip (offline)</text>
+
+        <!-- Arrow Browser <-> Master -->
+        <line x1="142" y1="99" x2="202" y2="99" stroke="#1B365D" stroke-width="1.3" marker-start="url(#arr)" marker-end="url(#arr)"/>
+        <text x="172" y="90" text-anchor="middle" font-size="8" font-weight="600" fill="#1B365D">HTTP + WS</text>
+        <text x="172" y="112" text-anchor="middle" font-size="7.5" fill="#52606D">4 Hz / 2 Hz</text>
+
+        <!-- Master Box -->
+        <rect x="206" y="12" width="286" height="174" rx="6" fill="#F0F5FA" stroke="#1B365D" stroke-width="1.5"/>
+        <rect x="206" y="12" width="286" height="24" rx="6" fill="#1B365D"/>
+        <rect x="206" y="28" width="286" height="8" fill="#1B365D"/>
+        <text x="349" y="28" text-anchor="middle" font-size="10" font-weight="700" fill="#FFFFFF">MASTER &middot; ESP32-S3-N16R8 (2 Cores, 8 MB PSRAM)</text>
+
+        <rect x="218" y="44" width="128" height="44" rx="4" fill="#FFFFFF" stroke="#94A3B8" stroke-width="0.9"/>
+        <text x="282" y="58" text-anchor="middle" font-size="8.8" font-weight="700" fill="#1B365D">Producers &amp; Suites</text>
+        <text x="282" y="70" text-anchor="middle" font-size="7.8" fill="#334155">4 Client Tasks, Frames</text>
+        <text x="282" y="81" text-anchor="middle" font-size="7.8" fill="#334155">Experiments (T1&ndash;T5)</text>
+
+        <rect x="354" y="44" width="126" height="44" rx="4" fill="#FFFFFF" stroke="#2E6B9E" stroke-width="1.1"/>
+        <text x="417" y="58" text-anchor="middle" font-size="8.8" font-weight="700" fill="#1B365D">Global Job Queue</text>
+        <text x="417" y="70" text-anchor="middle" font-size="7.8" fill="#334155">256 Ready / 32 In-Flight</text>
+        <text x="417" y="81" text-anchor="middle" font-size="7.8" fill="#2E6B9E">q_mtx + sem_free/ready</text>
+
+        <rect x="218" y="96" width="128" height="46" rx="4" fill="#FFFFFF" stroke="#94A3B8" stroke-width="0.9"/>
+        <text x="282" y="110" text-anchor="middle" font-size="8.8" font-weight="700" fill="#1B365D">Dispatcher &amp; Supervisor</text>
+        <text x="282" y="122" text-anchor="middle" font-size="7.8" fill="#334155">Order &times; Placement, Credits</text>
+        <text x="282" y="133" text-anchor="middle" font-size="7.8" fill="#334155">HB 3 s / Leases / Requeue</text>
+
+        <rect x="354" y="96" width="126" height="46" rx="4" fill="#FFFFFF" stroke="#94A3B8" stroke-width="0.9"/>
+        <text x="417" y="110" text-anchor="middle" font-size="8.8" font-weight="700" fill="#1B365D">Telemetry &amp; Storage</text>
+        <text x="417" y="122" text-anchor="middle" font-size="7.8" fill="#334155">600&times;400 PSRAM Frame</text>
+        <text x="417" y="133" text-anchor="middle" font-size="7.8" fill="#334155">4096-Job Ring, Logger</text>
+
+        <rect x="218" y="150" width="262" height="26" rx="4" fill="#E6EEF7" stroke="#2E6B9E" stroke-dasharray="3 2" stroke-width="1"/>
+        <text x="349" y="166" text-anchor="middle" font-size="8.4" font-weight="600" fill="#1B365D">Local Node Engine (Node 0): N=4 Pool, K Permits &mdash; Single-Node Mode</text>
+
+        <!-- Arrows Master <-> Workers -->
+        <line x1="494" y1="54" x2="564" y2="38" stroke="#1F7A70" stroke-width="1.3" marker-start="url(#arr-teal)" marker-end="url(#arr-teal)"/>
+        <line x1="494" y1="99" x2="564" y2="99" stroke="#1F7A70" stroke-width="1.3" marker-start="url(#arr-teal)" marker-end="url(#arr-teal)"/>
+        <line x1="494" y1="144" x2="564" y2="160" stroke="#1F7A70" stroke-width="1.3" marker-start="url(#arr-teal)" marker-end="url(#arr-teal)"/>
+        <text x="529" y="83" text-anchor="middle" font-size="7.8" font-weight="700" fill="#1F7A70">TCP :5005</text>
+        <text x="529" y="93" text-anchor="middle" font-size="7.3" fill="#52606D">NX v1 Frames</text>
+        <text x="529" y="114" text-anchor="middle" font-size="7.3" fill="#52606D">20 MHz SoftAP</text>
+
+        <!-- Worker A -->
+        <rect x="568" y="12" width="180" height="52" rx="5" fill="#F2FBF9" stroke="#1F7A70" stroke-width="1.2"/>
+        <text x="658" y="27" text-anchor="middle" font-size="9.2" font-weight="700" fill="#1F7A70">WORKER A &middot; ESP32 (2 Cores)</text>
+        <text x="658" y="40" text-anchor="middle" font-size="8" fill="#1F2937">Local Queue (8) &middot; N=4 Pool &middot; K=1..4</text>
+        <text x="658" y="53" text-anchor="middle" font-size="7.5" fill="#52606D">link_rx / link_tx &middot; HB 500 ms &middot; Sync Lab</text>
+
+        <!-- Worker B -->
+        <rect x="568" y="73" width="180" height="52" rx="5" fill="#F2FBF9" stroke="#1F7A70" stroke-width="1.2"/>
+        <text x="658" y="88" text-anchor="middle" font-size="9.2" font-weight="700" fill="#1F7A70">WORKER B &middot; ESP32 (2 Cores)</text>
+        <text x="658" y="101" text-anchor="middle" font-size="8" fill="#1F2937">Local Queue (8) &middot; N=4 Pool &middot; K=1..4</text>
+        <text x="658" y="114" text-anchor="middle" font-size="7.5" fill="#52606D">link_rx / link_tx &middot; HB 500 ms &middot; Sync Lab</text>
+
+        <!-- Worker C -->
+        <rect x="568" y="134" width="180" height="52" rx="5" fill="#F2FBF9" stroke="#1F7A70" stroke-width="1.2"/>
+        <text x="658" y="149" text-anchor="middle" font-size="9.2" font-weight="700" fill="#1F7A70">WORKER C &middot; ESP32 (2 Cores)</text>
+        <text x="658" y="162" text-anchor="middle" font-size="8" fill="#1F2937">Local Queue (8) &middot; N=4 Pool &middot; K=1..4</text>
+        <text x="658" y="175" text-anchor="middle" font-size="7.5" fill="#52606D">link_rx / link_tx &middot; HB 500 ms &middot; Sync Lab</text>
+      </svg>
+      <figcaption><strong>Figure 2.</strong> NEXUS cluster architecture illustrating Level-1 distributed orchestration (master dispatcher and supervisor over framed TCP IPC) and Level-2 per-board FreeRTOS SMP execution (shared node engine replicated on all four boards).</figcaption>
+    </figure>
+  </div>
+  <div class="run-foot">
+    <span>FAST&ndash;NUCES Karachi &middot; Department of Cyber Security</span>
+    <span>Page 4 of 14</span>
+  </div>
+</section>
+
+<!-- ==================== PAGE 5: FIRMWARE DESIGN, TASK HIERARCHY & MEMORY ==================== -->
+<section class="page">
+  <div class="run-head">
+    <span><strong>CS-2006 Operating Systems</strong> &mdash; Project Report</span>
+    <span>3. Firmware Design, Task Hierarchy &amp; Memory Layout</span>
+  </div>
+  <div class="content">
+    <h1><span class="sec-num">3.</span>Firmware Design, Task Hierarchy &amp; Memory Layout</h1>
+
+    <h2>3.1 Modular Firmware Organization</h2>
+    <p style="margin-bottom:3pt;">The codebase under <code>firmware/</code> separates shared OS mechanisms from board roles across three ESP-IDF components:</p>
+    <ul style="font-size:8.7pt; margin-bottom:4pt;">
+      <li><strong><code>components/nexus_core/</code> (Shared Node Engine):</strong> Implements <code>job_queue.c</code> (bounded priority buffer and master in-flight tracker), <code>exec_pool.c</code> (fixed 4-thread pool and semaphore permit cap), <code>kernels.c</code> (Mandelbrot, matrix multiplication, spin), <code>proto.c</code> (framed TCP), <code>logger.c</code>, <code>monitor.c</code>, and <code>oslab.c</code> (Labs A&ndash;D), configured centrally in <code>nexus_config.h</code>.</li>
+      <li><strong><code>master/main/</code> (Coordinator):</strong> Hosts the 20 MHz <code>NEXUS-OS</code> SoftAP (<code>wifi_ap.c</code>), cluster node table, dispatcher, and supervisor (<code>cluster.c</code>, <code>placement.h</code>), workload producers (<code>producers.c</code>), 4,096-job stats ring (<code>stats.c</code>), benchmark suites T1&ndash;T5 (<code>experiments.c</code>), and the HTTP/WebSocket dashboard (<code>web.c</code>, <code>www/index.html</code>).</li>
+      <li><strong><code>worker/main/</code> (Worker):</strong> Connects as a Wi-Fi STA with <code>WIFI_PS_NONE</code> (<code>wifi_sta.c</code>) to avoid ~100 ms DTIM wake latency, discovers the master via DHCP gateway, and runs <code>link_rx</code> / <code>link_tx</code> feeding a local 8-slot queue and 4-executor pool (<code>worker_link.c</code>).</li>
+    </ul>
+
+    <h2 style="margin-top:5pt;">3.2 FreeRTOS Task Priority Hierarchy</h2>
+    <p style="margin-bottom:3pt; font-size:8.9pt;">In ESP-IDF FreeRTOS, higher numerical priorities preempt lower ones and equal-priority tasks time-slice on the 10 ms tick (<code>CONFIG_FREERTOS_HZ = 100</code>). All NEXUS tasks sit below lwIP <code>tcpip</code> (18) and Wi-Fi (23) and enforce a strict control-over-compute hierarchy (Table 3) so CPU-bound executors can never starve heartbeats.</p>
+
+    <table class="small-table">
+      <thead>
+        <tr>
+          <th style="width:20%;">Task Name</th>
+          <th style="width:11%;">Board</th>
+          <th class="ctr" style="width:8%;">Prio</th>
+          <th class="ctr" style="width:11%;">Stack (B)</th>
+          <th style="width:13%;">Core Affinity</th>
+          <th style="width:37%;">Blocking Primitive &amp; Design Rationale</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="key">wifi / tcpip</td><td>All (IDF)</td><td class="ctr">23 / 18</td><td class="ctr">6656 / IDF</td><td>Core 0 / Any</td><td>Driver queues; kept strictly above application tasks to preserve radio &amp; TCP health.</td></tr>
+        <tr><td class="key">supervisor</td><td>Master</td><td class="ctr">11</td><td class="ctr">3072</td><td>Any</td><td>100 ms periodic delay; checks heartbeat timeouts, lease expiries, and pending requeues.</td></tr>
+        <tr><td class="key">link_rx / link_tx</td><td>All</td><td class="ctr">10</td><td class="ctr">4096</td><td>Any</td><td><code>recv()</code> / <code>tx_queue</code> (500 ms timeout triggers worker heartbeat); preempts compute tasks.</td></tr>
+        <tr><td class="key">listener / lab_run</td><td>Master / Any</td><td class="ctr">9</td><td class="ctr">3072</td><td>Any / Core 0</td><td><code>accept()</code> for worker joins; <code>lab_run</code> pinned to Core 0 so Core 1 inversion lab cannot block it.</td></tr>
+        <tr><td class="key">dispatcher</td><td>Master</td><td class="ctr">8</td><td class="ctr">3072</td><td>Any</td><td>Blocks on <code>sem_ready</code> and node credit availability; feeds remote or local queues.</td></tr>
+        <tr><td class="key">telemetry / httpd</td><td>Master</td><td class="ctr">6 / 5</td><td class="ctr">3072 / IDF</td><td>Core 0 / Any</td><td>Builds JSON snapshot at 2&ndash;4 Hz; HTTP handlers only enqueue commands and return promptly.</td></tr>
+        <tr><td class="key">exec_0 .. exec_3</td><td>All</td><td class="ctr">5</td><td class="ctr">3072</td><td>Balanced 0/1</td><td>Blocks on <code>sem_ready</code> then <code>sem_slots</code>; sleeps 1 tick &ge;1/s to satisfy Task WDT (5 s).</td></tr>
+        <tr><td class="key">client_0..3, frames</td><td>Master</td><td class="ctr">4</td><td class="ctr">3072</td><td>Any / Core 0</td><td>Workload producers; block on <code>sem_free</code> when the 256-slot global queue fills.</td></tr>
+        <tr><td class="key">monitor / logger</td><td>Master / All</td><td class="ctr">4 / 3</td><td class="ctr">3072</td><td>Any</td><td>500 ms task sampling; lowest-priority logger drains non-blocking 64-entry <code>log_queue</code>.</td></tr>
+      </tbody>
+    </table>
+
+    <h2 style="margin-top:5pt;">3.3 Memory Allocation Strategy &amp; Verified Release Footprints</h2>
+    <p style="font-size:8.9pt; margin-bottom:3pt;">NEXUS allocates fixed-capacity tables once at boot via <code>alloc_table()</code>, placing structures above 4 KiB into the master's 8 MB octal PSRAM (256-entry queue, 600&times;400 framebuffer, 4,096-entry stats ring, 12,840-byte tile HTTP buffer) while keeping stacks, synchronization objects, the 32-entry in-flight table, and workers' 8-slot queues in internal SRAM. Per-executor scratch was reduced from 12 KiB to <strong>2,176 bytes</strong> so all four executors fit cleanly inside classic ESP32 SRAM alongside Wi-Fi/lwIP. Table 4 lists the SHA-256 verified release images flashed to the cluster.</p>
+
+    <table class="small-table">
+      <thead>
+        <tr>
+          <th style="width:27%;">Release Binary (Merged at <code>0x0</code>)</th>
+          <th class="ctr" style="width:10%;">Target</th>
+          <th class="num" style="width:15%;">App Size (B)</th>
+          <th class="num" style="width:15%;">Static DRAM (B)</th>
+          <th style="width:33%;">Verified SHA-256 Digest (Prefix)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="key">nexus-master-esp32s3-flash.bin</td>
+          <td class="ctr"><code>esp32s3</code></td>
+          <td class="num">898,192 (79% free)</td>
+          <td class="num">85,772</td>
+          <td><code>6b275b1ced8568d5bb92fa41...5d6c4af</code></td>
+        </tr>
+        <tr>
+          <td class="key">nexus-worker-esp32-flash.bin</td>
+          <td class="ctr"><code>esp32</code></td>
+          <td class="num">802,384 (62% free)</td>
+          <td class="num">61,375</td>
+          <td><code>ffb01465c4b1c966d94276ec...0e66bc6</code></td>
+        </tr>
+        <tr>
+          <td class="key">nexus-worker-esp32s3-flash.bin</td>
+          <td class="ctr"><code>esp32s3</code></td>
+          <td class="num">756,016 (64% free)</td>
+          <td class="num">62,572</td>
+          <td><code>98d3f7d24803ee7549b1e9ba...1fa04d3d</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <p>All three release artifacts were packaged with bootloader and partition tables, verified against <code>firmware/release/manifest.json</code>, and flashed directly to the physical cluster boards.</p>
+  </div>
+  <div class="run-foot">
+    <span>FAST&ndash;NUCES Karachi &middot; Department of Cyber Security</span>
+    <span>Page 5 of 14</span>
+  </div>
+</section>
+
+<!-- ==================== PAGE 6: CONCURRENCY, SYNCHRONIZATION & DEADLOCK ==================== -->
+<section class="page">
+  <div class="run-head">
+    <span><strong>CS-2006 Operating Systems</strong> &mdash; Project Report</span>
+    <span>4. Concurrency, Synchronization &amp; Deadlock Prevention</span>
+  </div>
+  <div class="content">
+    <h1><span class="sec-num">4.</span>Concurrency, Synchronization &amp; Deadlock Prevention</h1>
+
+    <h2>4.1 Bounded-Buffer Job Queue &amp; Fixed Executor Pool</h2>
+    <p>The core synchronization structure in <code>job_queue.c</code> implements the classical bounded-buffer producer-consumer pattern (<em>OSC 10e</em> &sect;7.1.1) extended for priority selection and atomic in-flight state tracking. Rather than using a FIFO-only FreeRTOS queue, NEXUS protects an array of waiting jobs (<code>ready[256]</code>) and the master's active tracking table (<code>inflight[32]</code>) under a single mutex (<code>q_mtx</code>), paired with two counting semaphores: <code>sem_free</code> (initialized to capacity) and <code>sem_ready</code> (initialized to 0). Producers call <code>jq_submit()</code>, which acquires <code>sem_free</code>, locks <code>q_mtx</code>, inserts the job, unlocks, and posts <code>sem_ready</code>. Consumers split acquisition into <code>jq_wait_ready()</code> followed by <code>jq_pop_best()</code> so that executor threads can acquire an execution permit between waking and removing a job.</p>
+    <p>In <code>exec_pool.c</code>, <code>pool_start()</code> creates <strong>N = 4</strong> permanent executor threads at boot (avoiding per-job task creation overhead, <em>OSC 10e</em> &sect;4.5.1). Concurrency is throttled independently by a counting semaphore <code>sem_slots</code> holding <strong>K &le; N</strong> permits (default <em>K</em> = 2 to match each board's two CPU cores, live-adjustable 1..4). Raising <em>K</em> posts additional permits immediately; lowering <em>K</em> never preempts an active job&mdash;instead, idle permits are drained immediately and active surplus permits are retired gracefully inside <code>return_permit()</code> upon job completion.</p>
+
+    <h2 style="margin-top:5pt;">4.2 Synchronization Inventory &amp; Deadlock Prevention Proof</h2>
+    <p style="font-size:8.9pt; margin-bottom:3pt;">Deadlock requires mutual exclusion, hold and wait, no preemption, and circular wait (<em>OSC 10e</em> &sect;8.2). NEXUS eliminates circular wait structurally through an acyclic lock hierarchy across all synchronization objects (Table 5):</p>
+    <ul style="font-size:8.7pt; margin-bottom:4pt; line-height:1.34;">
+      <li><strong>No Simultaneous Subsystem Locks:</strong> The four subsystem mutexes (<code>q_mtx</code>, <code>nodes_mtx</code>, frame <code>s_fmtx</code>, and stats <code>s_mtx</code>) are never held concurrently; each module locks, copies required fields to stack variables, and unlocks before calling another module.</li>
+      <li><strong>Fixed Blocking Order:</strong> Blocking waits obey the strict partial order <code>sem_free / sem_ready &rarr; sem_slots &rarr; q_mtx</code>. When <code>supervisor_task</code> requeues jobs under <code>q_mtx</code>, it calls <code>xSemaphoreTake(sem_free, 0)</code> non-blockingly and defers full-buffer retries via <code>requeue_pending</code> on the next 100 ms tick.</li>
+      <li><strong>Leaf Spinlocks &amp; Outer View Lock:</strong> The pool's <code>portMUX</code> spinlock protects only short non-blocking counter updates, and <code>web.c</code>'s JSON build mutex is always strictly outermost. Because the wait-for graph is acyclic, deadlock is impossible by construction.</li>
+    </ul>
+
+    <table class="small-table" style="margin:3pt 0 5pt 0;">
+      <thead>
+        <tr>
+          <th style="width:20%;">Primitive</th>
+          <th style="width:17%;">FreeRTOS Type</th>
+          <th style="width:33%;">Protected State / Resource</th>
+          <th style="width:30%;">Contention &amp; Ordering Rule</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="key">q_mtx</td><td>Mutex (PI)</td><td><code>ready[]</code>, <code>inflight[]</code>, queue counters</td><td>Leaf lock; tries 0-tick lock first to measure contention %</td></tr>
+        <tr><td class="key">sem_free / sem_ready</td><td>Counting Sem.</td><td>Free buffer slots (256) / waiting jobs</td><td>Taken before <code>q_mtx</code>; never waits while holding mutex</td></tr>
+        <tr><td class="key">sem_slots</td><td>Counting Sem.</td><td>Execution permits <em>K</em> (1..4) across <em>N</em>=4 tasks</td><td>Taken after <code>sem_ready</code>, returned after kernel completes</td></tr>
+        <tr><td class="key">nodes_mtx / s_fmtx / s_mtx</td><td>Mutex (PI)</td><td>Node table / 600&times;400 framebuffer / 4096-job ring</td><td>Mutually disjoint; never nested with each other or <code>q_mtx</code></td></tr>
+        <tr><td class="key">tx_queue / log_queue</td><td>FreeRTOS Queue</td><td>Per-socket outbound frames / 64 log records</td><td><code>log_queue</code> send uses timeout 0 (non-blocking drop counter)</td></tr>
+      </tbody>
+    </table>
+
+    <figure style="margin-top:2pt; margin-bottom:2pt;">
+      <img src="assets/ui_freertos_monitor.jpg" alt="FreeRTOS Task Monitor and Queue Contention" class="shot" style="max-height:51mm;">
+      <figcaption><strong>Figure 3.</strong> Live FreeRTOS Monitor and Queue/Execution Slots panel on the ESP32-S3 master under active load. Core 0 is at 79% and Core 1 at 69%, with 23 sampled tasks displaying priorities, core affinity, and stack headroom. Right panel confirms bounded-buffer operation: 64/256 occupied slots, <strong>504,729 mutex acquisitions</strong> (787/s, <strong>4% contended</strong>), <strong>99 blocked producers</strong> on <code>sem_free</code>, and active/hatched permits across Workers A, B, and C (<em>K</em> = 4).</figcaption>
+    </figure>
+  </div>
+  <div class="run-foot">
+    <span>FAST&ndash;NUCES Karachi &middot; Department of Cyber Security</span>
+    <span>Page 6 of 14</span>
+  </div>
+</section>
+
+<!-- ==================== PAGE 7: TWO-LEVEL SCHEDULING & WORKLOADS ==================== -->
+<section class="page">
+  <div class="run-head">
+    <span><strong>CS-2006 Operating Systems</strong> &mdash; Project Report</span>
+    <span>5. Two-Level Scheduling, Placement &amp; Compute Workloads</span>
+  </div>
+  <div class="content">
+    <h1><span class="sec-num">5.</span>Two-Level Scheduling, Placement &amp; Compute Workloads</h1>
+
+    <h2>5.1 Level-1 Distributed Job Scheduling vs. Level-2 SMP Kernel Scheduling</h2>
+    <p>Scheduling in NEXUS operates at two distinct layers. At <strong>Level 1 (Orchestration)</strong>, the master's <code>dispatcher_task</code> selects <em>which queued job</em> runs next and <em>which board</em> executes it using a configurable <strong>(ordering, placement)</strong> policy pair. At <strong>Level 2 (Operating System Kernel)</strong>, FreeRTOS on each ESP32 board schedules its ready tasks across Core 0 and Core 1 using preemptive priority scheduling with 10 ms round-robin time-slicing among equal-priority executors. When a worker's permit cap <em>K</em> exceeds its two physical cores (<em>K</em> = 3 or 4), the dashboard visually hatches the third and fourth active slots (as seen in Figure 3) to distinguish true hardware parallelism from kernel time-slicing.</p>
+
+    <div class="grid-2" style="margin-top:2pt;">
+      <div>
+        <h3 style="margin-top:0;">Queue Ordering Policies (<code>jq_effective_priority</code>)</h3>
+        <ul style="font-size:8.7pt;">
+          <li><strong>FCFS:</strong> Assigns effective priority 0 to every job so the earliest monotonic sequence number always dispatches first.</li>
+          <li><strong>Strict Priority:</strong> Selects the highest base priority (<code>P3</code> down to <code>P0</code>), breaking ties by sequence number. Under continuous high-priority arrivals, <code>P0</code> jobs experience classic starvation.</li>
+          <li><strong>Priority + Aging (<em>OSC 10e</em> &sect;5.3.4):</strong> Computes <code>eff = min(3, base + &lfloor;wait_ms / 1500&rfloor;)</code>. Every 1.5 s spent waiting boosts effective priority by one level, guaranteeing bounded wait times for <code>P0</code> jobs even during a <code>P3</code> storm. Requeued jobs preserve their original sequence number and submit timestamp so failures never push them to the back.</li>
+        </ul>
+      </div>
+      <div>
+        <h3 style="margin-top:0;">Node Placement &amp; Prefetch Credits (<code>choose_node</code>)</h3>
+        <ul style="font-size:8.7pt;">
+          <li><strong>Credit Flow Control:</strong> A node is eligible only if it is <code>ONLINE</code>, not draining, and holds fewer than <strong><em>K</em> + 1</strong> in-flight jobs. The extra <code>+1</code> credit prefetches one job to hide Wi-Fi round-trip latency while strictly capping blast radius: a crashed worker loses at most <em>K</em> + 1 jobs.</li>
+          <li><strong>Round-Robin:</strong> Rotates across eligible nodes in cyclic order regardless of remaining job cost.</li>
+          <li><strong>Capacity-Aware Least-Loaded:</strong> Picks the eligible node minimizing <code>in_flight / K</code>, naturally steering new tiles toward boards that finished faster-escaping outer fractal tiles.</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>5.2 Deterministic Parameter-Seeded Workloads</h2>
+    <p>Every job message (<code>nx_job_spec_t</code>, exactly 32 packed bytes) carries only parameters and seeds rather than bulk input arrays, keeping dispatch frames tiny. Three kernels run inside <code>kernels.c</code>: (1) <strong>Mandelbrot Fractal</strong> (<code>NX_JOB_FRACTAL</code>), splitting a 600&times;400 canvas into 150 uneven-cost 40&times;40 pixel tiles prioritized from center (<code>P3</code>) to corners (<code>P0</code>) using single-precision hardware FPU arithmetic; (2) <strong>Seeded Integer Matrix Multiplication</strong> (<code>NX_JOB_MATMUL</code>, <em>n</em> &times; <em>n</em> up to 32&times;32 generated via xorshift, outputting a CRC32 digest); and (3) <strong>Timed Spin</strong> (<code>NX_JOB_SPIN</code>) for controlled starvation and runaway-timeout testing. Every kernel polls <code>esp_timer_get_time()</code> against <code>deadline_us</code> and cooperates cleanly by returning <code>NX_RES_TIMEOUT</code> on expiry, because abruptly deleting a FreeRTOS task risks leaking locks or scratch state.</p>
+
+    <figure style="margin-top:3pt;">
+      <img src="assets/ui_jobs_scheduler.png" alt="Job Lifecycle and Scheduler Panel" class="shot" style="max-height:54mm;">
+      <figcaption><strong>Figure 4.</strong> Live Job Lifecycle board and Scheduler control panel. With <strong>Priority + aging</strong> and <strong>Least-loaded</strong> active, 11 jobs wait in queue, 15 are dispatched/running across Workers A, B, and C, and <strong>46,692 jobs</strong> have committed with <strong>0 failures</strong>. The wait-time sparkline confirms oldest queued waits across P0&ndash;P3 remain bounded around 1.2 s (mean wait 327 ms, 42.3 jobs/s).</figcaption>
+    </figure>
+
+    <figure style="margin-top:4pt;">
+      <svg viewBox="0 0 760 120" xmlns="http://www.w3.org/2000/svg" font-family="Calibri, Segoe UI, Arial, sans-serif">
+        <defs>
+          <marker id="st-arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto">
+            <path d="M0,1 L9,5 L0,9 z" fill="#1B365D"/>
+          </marker>
+          <marker id="st-err" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto">
+            <path d="M0,1 L9,5 L0,9 z" fill="#A63A3A"/>
+          </marker>
+        </defs>
+        <rect width="760" height="120" fill="#FFFFFF"/>
+        <!-- States -->
+        <rect x="20" y="34" width="96" height="32" rx="16" fill="#F0F5FA" stroke="#1B365D" stroke-width="1.3"/>
+        <text x="68" y="54" text-anchor="middle" font-size="9.5" font-weight="700" fill="#1B365D">QUEUED</text>
+
+        <rect x="172" y="34" width="110" height="32" rx="16" fill="#F0F5FA" stroke="#2E6B9E" stroke-width="1.3"/>
+        <text x="227" y="54" text-anchor="middle" font-size="9.5" font-weight="700" fill="#2E6B9E">DISPATCHED</text>
+
+        <rect x="338" y="34" width="104" height="32" rx="16" fill="#F2FBF9" stroke="#1F7A70" stroke-width="1.3"/>
+        <text x="390" y="54" text-anchor="middle" font-size="9.5" font-weight="700" fill="#1F7A70">RUNNING</text>
+
+        <rect x="504" y="14" width="106" height="30" rx="15" fill="#E8F5F3" stroke="#1F7A70" stroke-width="1.5"/>
+        <text x="557" y="33" text-anchor="middle" font-size="9.5" font-weight="700" fill="#1F7A70">DONE (1&times;)</text>
+
+        <rect x="504" y="64" width="106" height="30" rx="15" fill="#FDF2F2" stroke="#A63A3A" stroke-width="1.3"/>
+        <text x="557" y="83" text-anchor="middle" font-size="9.5" font-weight="700" fill="#A63A3A">FAILED</text>
+
+        <rect x="642" y="38" width="104" height="30" rx="15" fill="#F5F7FA" stroke="#64748B" stroke-width="1.2" stroke-dasharray="3 2"/>
+        <text x="694" y="57" text-anchor="middle" font-size="9" font-weight="700" fill="#475569">CANCELLED</text>
+
+        <!-- Forward arrows -->
+        <line x1="116" y1="50" x2="170" y2="50" stroke="#1B365D" stroke-width="1.2" marker-end="url(#st-arr)"/>
+        <text x="143" y="44" text-anchor="middle" font-size="7.6" fill="#334155">dispatch</text>
+
+        <line x1="282" y1="50" x2="336" y2="50" stroke="#1B365D" stroke-width="1.2" marker-end="url(#st-arr)"/>
+        <text x="309" y="44" text-anchor="middle" font-size="7.6" fill="#334155">ACK</text>
+
+        <path d="M442,43 L472,43 L472,29 L502,29" fill="none" stroke="#1B365D" stroke-width="1.2" marker-end="url(#st-arr)"/>
+        <text x="476" y="22" text-anchor="middle" font-size="7.6" fill="#1F7A70">1st OK RESULT</text>
+
+        <path d="M442,58 L472,58 L472,79 L502,79" fill="none" stroke="#A63A3A" stroke-width="1.2" marker-end="url(#st-err)"/>
+        <text x="470" y="92" text-anchor="middle" font-size="7.4" fill="#A63A3A">attempt == 3</text>
+
+        <!-- Requeue loop -->
+        <path d="M390,66 L390,99 L68,99 L68,68" fill="none" stroke="#A63A3A" stroke-width="1.2" stroke-dasharray="4 2" marker-end="url(#st-err)"/>
+        <path d="M227,66 L227,99" fill="none" stroke="#A63A3A" stroke-width="1.2" stroke-dasharray="4 2"/>
+        <text x="230" y="112" text-anchor="middle" font-size="7.6" font-weight="600" fill="#A63A3A">worker OFFLINE / lease expired / TIMEOUT &rarr; requeue (attempt &lt; 3, keeps seq &amp; submit_ts)</text>
+
+        <!-- Lazy cancel -->
+        <path d="M68,34 L68,12 L694,12 L694,36" fill="none" stroke="#64748B" stroke-width="1" stroke-dasharray="3 2" marker-end="url(#st-arr)"/>
+        <text x="360" y="9" text-anchor="middle" font-size="7.5" fill="#52606D">frame zoom supersedes old tiles &rarr; lazy drop on pop (preserves semaphore counts)</text>
+      </svg>
+      <figcaption><strong>Figure 5.</strong> Job lifecycle state machine enforced under <code>q_mtx</code> in <code>job_queue.c</code>. Late duplicate results arriving after <code>DONE</code> are counted and discarded.</figcaption>
+    </figure>
+  </div>
+  <div class="run-foot">
+    <span>FAST&ndash;NUCES Karachi &middot; Department of Cyber Security</span>
+    <span>Page 7 of 14</span>
+  </div>
+</section>
+
+<!-- ==================== PAGE 8: IPC & FAULT RECOVERY ==================== -->
+<section class="page">
+  <div class="run-head">
+    <span><strong>CS-2006 Operating Systems</strong> &mdash; Project Report</span>
+    <span>6. Message-Passing IPC &amp; Fault Recovery Model</span>
+  </div>
+  <div class="content">
+    <h1><span class="sec-num">6.</span>Message-Passing IPC &amp; Fault Recovery Model</h1>
+
+    <h2>6.1 Framed Binary Protocol &amp; Single-Writer Socket Discipline</h2>
+    <p>Because TCP presents an unstructured byte stream, NEXUS encapsulates every inter-board message in an explicit binary frame defined in <code>proto.h</code> and validated with C11 <code>_Static_assert</code> layout checks. Each frame begins with an 8-byte packed header: <code>magic = 0x584E</code> (<code>"NX"</code>), <code>version = 1</code>, <code>type</code> (<code>HELLO</code>, <code>WELCOME</code>, <code>DISPATCH</code>, <code>ACK</code>, <code>RESULT</code>, <code>HEARTBEAT</code>, or <code>CONTROL</code>), 16-bit payload length (up to 2,048 bytes for a 1,600-byte Mandelbrot tile result), and 2 reserved bytes. On the receiving side, <code>nx_recv_frame()</code> loops until exactly 8 header bytes arrive, verifies magic/version/bounds, and reads the exact payload length regardless of TCP segmentation. Partial or malformed frames immediately close the stream with distinct diagnostics (<code>EOF</code> vs. <code>EBADMSG</code> vs. socket error).</p>
+    <p>To prevent concurrent tasks from interleaving bytes on a shared socket without locking the network stack, every TCP link uses a <strong>single-writer architecture</strong>: only one dedicated <code>link_tx</code> task ever invokes <code>send()</code> on a socket. All producers of outbound traffic&mdash;the dispatcher, control handlers, <code>admit()</code>, or worker executors&mdash;enqueue messages onto that link's bounded FreeRTOS <code>tx_queue</code>. On workers, <code>link_tx</code> simply waits on <code>tx_queue</code> with a 500 ms timeout; whenever no result or ACK is pending, the timeout itself triggers a <code>HEARTBEAT</code> packet, avoiding an extra task and keeping the single-writer invariant intact.</p>
+
+    <h2>6.2 Worker Identity, Heartbeat Detection &amp; Lease Semantics</h2>
+    <p>Physical Wi-Fi disconnects cannot be relied upon for timely crash detection: a board whose USB cable is pulled transmits no TCP <code>FIN</code>, and ESP-IDF's SoftAP inactivity timer does not deauthenticate a silent station for 300 seconds by default. NEXUS therefore combines three complementary mechanisms:</p>
+    <ul>
+      <li><strong>MAC + Incarnation Identity:</strong> Upon booting, each worker generates a random 32-bit <code>incarnation</code> token and sends it alongside its 6-byte factory MAC in <code>HELLO</code>. If a board reconnects with the same MAC and the <em>same</em> incarnation (transient Wi-Fi glitch), in-flight work may still complete. If the incarnation <em>changed</em> (crash/reboot), the master immediately requeues all prior jobs assigned to that node.</li>
+      <li><strong>Heartbeat Supervisor (<code>supervisor_task</code>, 100 ms tick):</strong> Workers send heartbeats every <strong>500 ms</strong> carrying active job IDs, slot counts, core loads, sampled tasks, and an optional 10-byte extended trailer confirming chip type, core count, and <code>SET_SLOTS</code> generation acknowledgements. Silence exceeding <strong>1.5 s</strong> transitions the node to <code>SUSPECT</code>; silence reaching <strong>3.0 s</strong> declares it <code>OFFLINE</code> and triggers <code>jq_requeue_node()</code>.</li>
+      <li><strong>Per-Job Leases &amp; Exactly-Once Commit:</strong> Every dispatched job carries a master-side lease equal to <code>budget_ms + 2000 ms</code>. Even if a worker stays alive and sends heartbeats, a lost dispatch or stalled job triggers lease expiry and requeuing (up to <code>NX_MAX_ATTEMPTS = 3</code>). NEXUS provides <strong>at-least-once execution</strong> coupled with <strong>exactly-once commit</strong>: inside <code>jq_commit()</code>, the first valid result for a <code>job_id</code> commits its pixels/statistics and cancels any requeued copy, while any delayed duplicate from a muted or recovered worker increments the duplicate counter and is safely discarded.</li>
+    </ul>
+
+    <figure style="margin-top:6pt;">
+      <svg viewBox="0 0 760 228" xmlns="http://www.w3.org/2000/svg" font-family="Calibri, Segoe UI, Arial, sans-serif">
+        <defs>
+          <marker id="m-nav" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto"><path d="M0,1 L9,5 L0,9 z" fill="#1B365D"/></marker>
+          <marker id="m-tl" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto"><path d="M0,1 L9,5 L0,9 z" fill="#1F7A70"/></marker>
+          <marker id="m-rd" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto"><path d="M0,1 L9,5 L0,9 z" fill="#A63A3A"/></marker>
+        </defs>
+        <rect width="760" height="228" fill="#FFFFFF"/>
+
+        <!-- Top Band: Wire Frame Layout -->
+        <text x="14" y="16" font-size="9" font-weight="700" fill="#1B365D">A. NX v1 Binary Frame Wire Format (Packed, Scatter/Gather Single-Writer TX)</text>
+        <rect x="14" y="23" width="94" height="32" fill="#1B365D" stroke="#1B365D"/>
+        <text x="61" y="37" text-anchor="middle" font-size="8.2" font-weight="700" fill="#FFFFFF">magic (2 B)</text>
+        <text x="61" y="49" text-anchor="middle" font-size="7.5" fill="#CBD5E1">0x584E ("NX")</text>
+
+        <rect x="108" y="23" width="66" height="32" fill="#2E6B9E" stroke="#1B365D"/>
+        <text x="141" y="37" text-anchor="middle" font-size="8.2" font-weight="700" fill="#FFFFFF">ver (1 B)</text>
+        <text x="141" y="49" text-anchor="middle" font-size="7.5" fill="#E2E8F0">v1</text>
+
+        <rect x="174" y="23" width="84" height="32" fill="#2E6B9E" stroke="#1B365D"/>
+        <text x="216" y="37" text-anchor="middle" font-size="8.2" font-weight="700" fill="#FFFFFF">type (1 B)</text>
+        <text x="216" y="49" text-anchor="middle" font-size="7.5" fill="#E2E8F0">1..7 enum</text>
+
+        <rect x="258" y="23" width="84" height="32" fill="#3B7FB8" stroke="#1B365D"/>
+        <text x="300" y="37" text-anchor="middle" font-size="8.2" font-weight="700" fill="#FFFFFF">len (2 B)</text>
+        <text x="300" y="49" text-anchor="middle" font-size="7.5" fill="#E2E8F0">0..2048 B</text>
+
+        <rect x="342" y="23" width="68" height="32" fill="#64748B" stroke="#1B365D"/>
+        <text x="376" y="37" text-anchor="middle" font-size="8.2" font-weight="700" fill="#FFFFFF">rsv (2 B)</text>
+        <text x="376" y="49" text-anchor="middle" font-size="7.5" fill="#E2E8F0">0x0000</text>
+
+        <rect x="410" y="23" width="336" height="32" fill="#F0F5FA" stroke="#1B365D"/>
+        <text x="578" y="37" text-anchor="middle" font-size="8.5" font-weight="700" fill="#1B365D">Payload (len bytes): HELLO (12 B) | DISPATCH (32 B) | RESULT (18 B + 1600 B tile)</text>
+        <text x="578" y="49" text-anchor="middle" font-size="7.5" fill="#52606D">HEARTBEAT (progress + up to 24 tasks + 10 B ext trailer with chip/cores/slot_ack)</text>
+
+        <!-- Bottom Band: Crash Detection & Recovery Sequence -->
+        <line x1="14" y1="68" x2="746" y2="68" stroke="#E2E8F0" stroke-width="1"/>
+        <text x="14" y="83" font-size="9" font-weight="700" fill="#1B365D">B. Worker Crash Detection, Automatic Requeue &amp; Incarnation Rejoin Sequence</text>
+
+        <!-- Lifelines -->
+        <rect x="36" y="92" width="118" height="22" rx="3" fill="#1B365D"/>
+        <text x="95" y="106" text-anchor="middle" font-size="8.5" font-weight="700" fill="#FFFFFF">Master (Dispatcher/Sup)</text>
+        <line x1="95" y1="114" x2="95" y2="218" stroke="#94A3B8" stroke-dasharray="3 2"/>
+
+        <rect x="315" y="92" width="130" height="22" rx="3" fill="#A63A3A"/>
+        <text x="380" y="106" text-anchor="middle" font-size="8.5" font-weight="700" fill="#FFFFFF">Worker B (Fails / Reboots)</text>
+        <line x1="380" y1="114" x2="380" y2="218" stroke="#94A3B8" stroke-dasharray="3 2"/>
+
+        <rect x="598" y="92" width="128" height="22" rx="3" fill="#1F7A70"/>
+        <text x="662" y="106" text-anchor="middle" font-size="8.5" font-weight="700" fill="#FFFFFF">Workers A / C (Healthy)</text>
+        <line x1="662" y1="114" x2="662" y2="218" stroke="#94A3B8" stroke-dasharray="3 2"/>
+
+        <!-- Step 1 -->
+        <line x1="95" y1="128" x2="378" y2="128" stroke="#1B365D" stroke-width="1.2" marker-end="url(#m-nav)"/>
+        <text x="237" y="124" text-anchor="middle" font-size="7.8" fill="#1F2937">DISPATCH (5 jobs, attempt=1) &rarr; ACK</text>
+
+        <!-- Step 2: Crash -->
+        <rect x="342" y="137" width="76" height="16" rx="2" fill="#FDF2F2" stroke="#A63A3A"/>
+        <text x="380" y="148" text-anchor="middle" font-size="7.6" font-weight="700" fill="#A63A3A">POWER LOSS / REBOOT</text>
+
+        <!-- Step 3: Silence detection -->
+        <rect x="26" y="154" width="138" height="24" rx="2" fill="#FFF8EB" stroke="#9A5B13"/>
+        <text x="95" y="164" text-anchor="middle" font-size="7.3" font-weight="700" fill="#9A5B13">t + 1.5 s: SUSPECT</text>
+        <text x="95" y="174" text-anchor="middle" font-size="7.3" font-weight="700" fill="#A63A3A">t + 3.024 s: OFFLINE &rarr; requeue 5</text>
+
+        <!-- Step 4: Reassignment -->
+        <line x1="95" y1="188" x2="660" y2="188" stroke="#1F7A70" stroke-width="1.3" marker-end="url(#m-tl)"/>
+        <text x="480" y="184" text-anchor="middle" font-size="7.8" font-weight="600" fill="#1F7A70">Re-DISPATCH (attempt=2, original seq preserved) &rarr; RESULT &rarr; jq_commit() 1&times;</text>
+
+        <!-- Step 5: Rejoin -->
+        <line x1="380" y1="208" x2="97" y2="208" stroke="#1B365D" stroke-width="1.2" stroke-dasharray="4 2" marker-end="url(#m-nav)"/>
+        <text x="237" y="204" text-anchor="middle" font-size="7.7" fill="#1B365D">HELLO (same MAC, new incarnation) &larr; WELCOME (reclaims Slot B)</text>
+      </svg>
+      <figcaption><strong>Figure 6.</strong> (A) Fixed 8-byte <code>NX</code> v1 framing header and payload contract verified by compile-time <code>_Static_assert</code>. (B) Measured failure-recovery sequence matching the live Worker B event (3,024 ms detection delay and 5 requeued jobs).</figcaption>
+    </figure>
+  </div>
+  <div class="run-foot">
+    <span>FAST&ndash;NUCES Karachi &middot; Department of Cyber Security</span>
+    <span>Page 8 of 14</span>
+  </div>
+</section>
+
+<!-- ==================== PAGE 9: SYNCHRONIZATION LABORATORY ==================== -->
+<section class="page">
+  <div class="run-head">
+    <span><strong>CS-2006 Operating Systems</strong> &mdash; Project Report</span>
+    <span>7. Synchronization Laboratory &amp; Fault Injection Results</span>
+  </div>
+  <div class="content">
+    <h1><span class="sec-num">7.</span>Synchronization Laboratory &amp; Fault Injection Results</h1>
+
+    <h2>7.1 On-Hardware Verification of Classic OS Concurrency Phenomena</h2>
+    <p>To make low-level concurrency bugs and their kernel remedies directly reproducible on demand, <code>oslab.c</code> embeds four controlled experiments executable on any board from the Control Center. Figure 7 shows a live run executed on physical <strong>Worker A</strong> (ESP32-D0WD-V3, dual-core 240 MHz) alongside the Fault Injection &amp; Recovery panel:</p>
+    <ul>
+      <li><strong>Lab A (Lost-Update Race Condition):</strong> Two tasks pinned to Core 0 and Core 1 each execute a non-atomic read-modify-write increment 100,000 times on a shared 32-bit counter without locking. Due to true parallel execution across both Xtensa cores, simultaneous reads overwrite updates: Worker A finished at <strong>103,185</strong> instead of 200,000&mdash;losing <strong>96,815 updates (48.4%)</strong> in 7.7 ms.</li>
+      <li><strong>Lab B (Mutex Protection &amp; Cost):</strong> Wrapping the identical increment inside a FreeRTOS mutex restored exact correctness (<strong>200,000 / 200,000</strong>, zero lost updates), while increasing runtime to <strong>2,890 ms</strong>&mdash;directly quantifying the cost of fine-grained lock contention across two cores.</li>
+      <li><strong>Lab C (Counting Semaphore Permit Cap):</strong> Six competing tasks execute 10 jobs each (60 jobs total) gated by a counting semaphore with 2 permits. Worker A completed all <strong>60 jobs</strong> with a verified <strong>peak concurrency of 2 / 2</strong>, never violating the permit invariant.</li>
+      <li><strong>Lab D (Priority Inversion &amp; Inheritance, <em>OSC 10e</em> &sect;6.8.2):</strong> Low (L), Medium (M), and High (H) priority tasks are pinned to Core 1 (with <code>lab_run</code> isolated on Core 0). L acquires a lock for 20 ms of work, H blocks on the lock, and CPU-bound M runs for 300 ms. With a <strong>binary semaphore</strong> (no priority inheritance), M preempts L and delays H for <strong>320 ms</strong>. Switching to a <strong>FreeRTOS mutex</strong> lets L temporarily inherit H's priority, finish immediately without preemption by M, and drop H's wait to <strong>20.1 ms</strong>&mdash;a <strong>15.9&times; latency reduction</strong>.</li>
+    </ul>
+
+    <figure style="margin-top:3pt;">
+      <img src="assets/ui_sync_lab.png" alt="Live Synchronization Lab and Fault Injection Panel" class="shot" style="max-height:53mm;">
+      <figcaption><strong>Figure 7.</strong> Live Synchronization Lab executed on physical Worker A (left) and Fault Injection &amp; Recovery controls (right). Notice the logged live recovery event at bottom right: <strong>Worker B detected offline in 3,024 ms after last message, with 5 in-flight jobs automatically requeued</strong>.</figcaption>
+    </figure>
+
+    <figure style="margin-top:4pt;">
+      <svg viewBox="0 0 760 170" xmlns="http://www.w3.org/2000/svg" font-family="Calibri, Segoe UI, Arial, sans-serif">
+        <rect width="760" height="170" fill="#FFFFFF"/>
+        <!-- Panel A: Labs A & B Counter Integrity -->
+        <text x="190" y="18" text-anchor="middle" font-size="9.5" font-weight="700" fill="#1B365D">A. Labs A &amp; B: Shared Counter Integrity (Target = 200,000)</text>
+        <line x1="56" y1="30" x2="56" y2="136" stroke="#94A3B8" stroke-width="1"/>
+        <line x1="56" y1="136" x2="358" y2="136" stroke="#94A3B8" stroke-width="1"/>
+        <!-- Y Gridlines -->
+        <line x1="56" y1="36" x2="358" y2="36" stroke="#E2E8F0" stroke-dasharray="2 2"/>
+        <line x1="56" y1="86" x2="358" y2="86" stroke="#E2E8F0" stroke-dasharray="2 2"/>
+        <text x="51" y="39" text-anchor="end" font-size="7.5" fill="#52606D">200k</text>
+        <text x="51" y="89" text-anchor="end" font-size="7.5" fill="#52606D">100k</text>
+        <text x="51" y="139" text-anchor="end" font-size="7.5" fill="#52606D">0</text>
+        <!-- Expected dashed reference -->
+        <line x1="56" y1="36" x2="358" y2="36" stroke="#1F7A70" stroke-width="0.9" stroke-dasharray="4 2"/>
+        <!-- Bars: scale 100px = 200,000 -> 0.5px per 1k -->
+        <!-- Physical Worker A Lab A: 103,185 -> 51.6px -->
+        <rect x="76" y="84.4" width="44" height="51.6" fill="#A63A3A"/>
+        <text x="98" y="80" text-anchor="middle" font-size="7.8" font-weight="700" fill="#A63A3A">103,185</text>
+        <text x="98" y="148" text-anchor="middle" font-size="7.5" fill="#1F2937">Lab A (HW)</text>
+        <text x="98" y="158" text-anchor="middle" font-size="7" fill="#A63A3A">-48.4% lost</text>
+
+        <!-- QEMU ESP32 Lab A: 106,795 -> 53.4px -->
+        <rect x="140" y="82.6" width="44" height="53.4" fill="#C96A6A"/>
+        <text x="162" y="78" text-anchor="middle" font-size="7.8" font-weight="700" fill="#A63A3A">106,795</text>
+        <text x="162" y="148" text-anchor="middle" font-size="7.5" fill="#1F2937">Lab A (QEMU)</text>
+        <text x="162" y="158" text-anchor="middle" font-size="7" fill="#52606D">ESP32 dual</text>
+
+        <!-- QEMU S3 Lab A: 100,908 -> 50.5px -->
+        <rect x="204" y="85.5" width="44" height="50.5" fill="#D98B8B"/>
+        <text x="226" y="81" text-anchor="middle" font-size="7.8" font-weight="700" fill="#A63A3A">100,908</text>
+        <text x="226" y="148" text-anchor="middle" font-size="7.5" fill="#1F2937">Lab A (QEMU)</text>
+        <text x="226" y="158" text-anchor="middle" font-size="7" fill="#52606D">S3 dual</text>
+
+        <!-- Lab B Mutex (HW & QEMU): 200,000 -> 100px -->
+        <rect x="278" y="36" width="54" height="100" fill="#1F7A70"/>
+        <text x="305" y="32" text-anchor="middle" font-size="8" font-weight="700" fill="#1F7A70">200,000</text>
+        <text x="305" y="148" text-anchor="middle" font-size="7.5" font-weight="700" fill="#1F2937">Lab B (Mutex)</text>
+        <text x="305" y="158" text-anchor="middle" font-size="7" fill="#1F7A70">100% exact</text>
+
+        <!-- Divider -->
+        <line x1="382" y1="12" x2="382" y2="160" stroke="#E2E8F0" stroke-width="1"/>
+
+        <!-- Panel B: Lab D Priority Inversion Wait Latency -->
+        <text x="572" y="18" text-anchor="middle" font-size="9.5" font-weight="700" fill="#1B365D">B. Lab D: High-Priority Task (H) Blocking Time (ms)</text>
+        <line x1="436" y1="30" x2="436" y2="136" stroke="#94A3B8" stroke-width="1"/>
+        <line x1="436" y1="136" x2="740" y2="136" stroke="#94A3B8" stroke-width="1"/>
+        <!-- Y Gridlines: max 450 ms -> 100px -->
+        <line x1="436" y1="36" x2="740" y2="36" stroke="#E2E8F0" stroke-dasharray="2 2"/>
+        <line x1="436" y1="86" x2="740" y2="86" stroke="#E2E8F0" stroke-dasharray="2 2"/>
+        <text x="430" y="39" text-anchor="end" font-size="7.5" fill="#52606D">450</text>
+        <text x="430" y="89" text-anchor="end" font-size="7.5" fill="#52606D">225</text>
+        <text x="430" y="139" text-anchor="end" font-size="7.5" fill="#52606D">0</text>
+
+        <!-- Group 1: Physical Worker A (320 ms vs 20.1 ms) -->
+        <rect x="458" y="64.9" width="32" height="71.1" fill="#A63A3A"/>
+        <text x="474" y="60.5" text-anchor="middle" font-size="7.6" font-weight="700" fill="#A63A3A">320</text>
+        <rect x="494" y="131.5" width="32" height="4.5" fill="#1F7A70"/>
+        <text x="510" y="127" text-anchor="middle" font-size="7.6" font-weight="700" fill="#1F7A70">20.1</text>
+        <text x="492" y="148" text-anchor="middle" font-size="7.6" font-weight="700" fill="#1F2937">Worker A (HW)</text>
+        <text x="492" y="158" text-anchor="middle" font-size="7" fill="#1F7A70">15.9&times; faster</text>
+
+        <!-- Group 2: QEMU ESP32 (328.2 ms vs 22.3 ms) -->
+        <rect x="556" y="63.1" width="32" height="72.9" fill="#A63A3A"/>
+        <text x="572" y="58.5" text-anchor="middle" font-size="7.6" font-weight="700" fill="#A63A3A">328.2</text>
+        <rect x="592" y="131.0" width="32" height="5.0" fill="#1F7A70"/>
+        <text x="608" y="126.5" text-anchor="middle" font-size="7.6" font-weight="700" fill="#1F7A70">22.3</text>
+        <text x="590" y="148" text-anchor="middle" font-size="7.6" fill="#1F2937">ESP32 (QEMU)</text>
+        <text x="590" y="158" text-anchor="middle" font-size="7" fill="#52606D">14.7&times; faster</text>
+
+        <!-- Group 3: QEMU ESP32-S3 (433.3 ms vs 23.5 ms) -->
+        <rect x="654" y="39.7" width="32" height="96.3" fill="#A63A3A"/>
+        <text x="670" y="35.5" text-anchor="middle" font-size="7.6" font-weight="700" fill="#A63A3A">433.3</text>
+        <rect x="690" y="130.8" width="32" height="5.2" fill="#1F7A70"/>
+        <text x="706" y="126.2" text-anchor="middle" font-size="7.6" font-weight="700" fill="#1F7A70">23.5</text>
+        <text x="688" y="148" text-anchor="middle" font-size="7.6" fill="#1F2937">ESP32-S3 (QEMU)</text>
+        <text x="688" y="158" text-anchor="middle" font-size="7" fill="#52606D">18.4&times; faster</text>
+
+        <!-- Legend -->
+        <rect x="446" y="25" width="8" height="8" fill="#A63A3A"/>
+        <text x="458" y="32" font-size="7.3" fill="#334155">Binary Semaphore (no PI)</text>
+        <rect x="562" y="25" width="8" height="8" fill="#1F7A70"/>
+        <text x="574" y="32" font-size="7.3" fill="#334155">Mutex (Priority Inheritance)</text>
+      </svg>
+      <figcaption><strong>Figure 8.</strong> Empirical comparison across physical hardware (Worker A) and dual-core QEMU self-tests: (A) severe lost updates without locking vs. exact 200,000 mutex counts; (B) priority-inversion delay collapsed by 14.7&times;&ndash;18.4&times; using FreeRTOS priority-inheriting mutexes.</figcaption>
+    </figure>
+  </div>
+  <div class="run-foot">
+    <span>FAST&ndash;NUCES Karachi &middot; Department of Cyber Security</span>
+    <span>Page 9 of 14</span>
+  </div>
+</section>
+
+<!-- ==================== PAGE 10: CONTROL CENTER & LIVE OPERATION ==================== -->
+<section class="page">
+  <div class="run-head">
+    <span><strong>CS-2006 Operating Systems</strong> &mdash; Project Report</span>
+    <span>8. NEXUS Control Center &amp; Live Cluster Operation</span>
+  </div>
+  <div class="content">
+    <h1><span class="sec-num">8.</span>NEXUS Control Center &amp; Live Cluster Operation</h1>
+
+    <h2>8.1 Embedded Offline Dashboard Architecture</h2>
+    <p>Project #2 specifies a GUI dashboard displaying queued, running, and completed tasks. Because the cluster operates on an isolated SoftAP with no internet connectivity, the entire operator console (<code>firmware/master/main/www/index.html</code>) is written in dependency-free HTML, CSS, and JavaScript, gzipped at build time to <strong>21,959 bytes</strong>, and linked directly into the master's read-only flash partition. Opening <code>http://192.168.4.1/</code> from any laptop or phone attached to <code>NEXUS-OS</code> loads the interface in a single HTTP response.</p>
+    <p>Live updates flow over a persistent WebSocket endpoint (<code>/ws</code>) driven by <code>telemetry_task</code> at an adaptive rate: up to <strong>4 Hz</strong> while jobs are executing and <strong>2 Hz</strong> when idle, with at most one queued broadcast frame to prevent back-pressure on the HTTP server. Completed Mandelbrot tiles are fetched in paginated batches of eight via a monotonic version watermark (<code>/api/tiles?since=N</code>) through a fixed 12,840-byte response buffer, eliminating large heap spikes. During integration on ESP-IDF v6.1, we resolved a subtle server change where ESP-IDF completes WebSocket handshakes without invoking the URI handler on <code>HTTP_GET</code>; <code>ws_broadcast()</code> now enumerates active file descriptors dynamically via <code>httpd_get_client_list()</code> and <code>httpd_ws_get_fd_info()</code>.</p>
+
+    <figure style="margin-top:4pt;">
+      <img src="assets/ui_overview.jpg" alt="NEXUS Control Center Cluster Overview" class="shot" style="max-height:92mm;">
+      <figcaption><strong>Figure 9.</strong> Live NEXUS Control Center Cluster Overview at <code>http://192.168.4.1/</code> after 22 minutes 24 seconds of continuous four-board operation. All <strong>4/4 nodes</strong> are live (ESP32-S3 master + Workers A, B, and C at 2 cores / 240 MHz each). Top KPI strip reports <strong>51.0 jobs/s</strong>, <strong>45,483 committed jobs</strong>, <strong>27 retries</strong>, and <strong>5 duplicates safely rejected</strong>. Right canvas displays completed Mandelbrot Frame 265 (150/150 tiles, 5.7&times; zoom, 205 iterations) completed in <strong>1.4 s</strong> with near-uniform worker split: <strong>A: 52, B: 51, C: 47, M: 0</strong>.</figcaption>
+    </figure>
+
+    <h2>8.2 Live Cluster Health &amp; Long-Duration Stability Observations</h2>
+    <p>Figure 9 captures several critical operating system metrics under sustained multi-board operation:</p>
+    <div class="kpi-strip">
+      <div class="kpi-card"><div class="val">45,483+</div><div class="lbl">Committed Jobs (0 Failed)</div></div>
+      <div class="kpi-card"><div class="val">27 / 5</div><div class="lbl">Retries / Duplicates Dropped</div></div>
+      <div class="kpi-card"><div class="val">52 / 51 / 47</div><div class="lbl">Frame 265 Split (A / B / C)</div></div>
+      <div class="kpi-card"><div class="val">7,751 / 153 KB</div><div class="lbl">Free RAM (Master / Workers)</div></div>
+    </div>
+    <p>First, across more than 45,000 committed jobs over 22+ minutes (reaching 46,692 commits in Figure 4), zero jobs failed permanently; the 27 retries and 5 rejected duplicates confirm that transient network or crash faults triggered automatic requeuing while <code>jq_commit()</code> preserved strict exactly-once commit semantics. Second, all three classic ESP32 workers sustained an identical steady-state free heap of <strong>153 KB</strong> while maintaining active TCP links, heartbeats, and 4-executor pools&mdash;confirming zero memory leakage under radio load. Third, the master retained <strong>7,751 KB</strong> free across PSRAM and internal SRAM while simultaneously coordinating three workers and serving live WebSocket telemetry.</p>
+  </div>
+  <div class="run-foot">
+    <span>FAST&ndash;NUCES Karachi &middot; Department of Cyber Security</span>
+    <span>Page 10 of 14</span>
+  </div>
+</section>
+
+<!-- ==================== PAGE 11: EXPERIMENTAL METHODOLOGY & VERIFICATION ==================== -->
+<section class="page">
+  <div class="run-head">
+    <span><strong>CS-2006 Operating Systems</strong> &mdash; Project Report</span>
+    <span>9. Experimental Methodology &amp; Automated Verification</span>
+  </div>
+  <div class="content">
+    <h1><span class="sec-num">9.</span>Experimental Methodology &amp; Automated Verification</h1>
+
+    <h2>9.1 Three-Tier Verification Pipeline</h2>
+    <p>Before running physical hardware benchmarks, NEXUS was validated across three automated layers so that algorithmic bugs could be isolated from wireless RF effects:</p>
+    <ol>
+      <li><strong>Host Native C Unit Suite (<code>firmware/tests/host/</code>):</strong> Compiled directly on the host with stubbed FreeRTOS semaphores to verify FCFS, strict priority, aging, bounded-buffer capacity accounting, retry limits, duplicate rejection, master-only routing, three-worker capacity-aware placement, and fragmented/coalesced/malformed TCP frame recovery. All assertions passed.</li>
+      <li><strong>Dual-Core QEMU Device Self-Tests (<code>firmware/tests/device/</code>):</strong> Executed the real production queue, executor pool, kernels, and synchronization labs inside Espressif QEMU on both <code>esp32</code> and <code>esp32s3</code> targets with two active FreeRTOS cores. Both architectures produced bit-for-bit identical output checksums (overview fractal <code>89c14f24</code>, detail fractal <code>4208557d</code>, seeded 32&times;32 matrix <code>af160840</code>), enforced all four permit caps (<em>K</em> = 1..4), passed cooperative timeout cancellation, and exhibited <strong>zero heap drift</strong> across repeated full-frame renders (<code>esp32</code>: 250,328 B before and after; <code>esp32s3</code>: 343,836 B before and after).</li>
+      <li><strong>Browser Smoke Suite (<code>firmware/tests/browser/smoke.cjs</code>):</strong> Validated the embedded HTML/JS dashboard in headless Chromium at both desktop (1440&times;900) and mobile (390&times;844) viewports across 4-board Worker C telemetry, tile paging, and fault controls.</li>
+    </ol>
+
+    <h2>9.2 Controlled Hardware Benchmark Protocol (<code>experiments.c</code>)</h2>
+    <p>For repeatable physical measurements, the master firmware embeds a dedicated experiment runner (<code>experiments.c</code>) supporting five structured suites: <strong>T1 Scheduling</strong> (all 6 ordering &times; placement pairs on a mixed-priority workload), <strong>T2 Correctness</strong> (single-node CRC vs. distributed 4-producer burst of 310 commits), <strong>T3 Recovery</strong> (Worker A crash at 40% frame completion), <strong>T4 Slots</strong> (sweeping <em>K</em> = 1..4 across Workers A, B, and C with correlated ACKs), and <strong>T5 Scaling</strong> (comparing 0, 1, 2, and 3 workers on 100 seeded <code>MATMUL</code> jobs at <em>n</em> = 12 and <em>n</em> = 32, repeated three times per configuration).</p>
+    <p>To prevent measurement contamination, starting a suite pauses background client tasks and auto-zoom, locks out manual dashboard controls, waits for three consecutive idle checks, tags all commits with a run ID, and measures all latencies exclusively on the <strong>master's microsecond clock</strong> (<code>esp_timer_get_time()</code>) so inter-board clock skew never affects results. Summaries export via <code>/api/runs.csv</code> and raw job records via <code>/api/csv</code>.</p>
+
+    <figure style="margin-top:2pt;">
+      <img src="assets/ui_benchmarks_t5.jpg" alt="Hardware Benchmarks T5 Runs 44-61" class="shot" style="max-height:48mm;">
+      <figcaption><strong>Figure 10.</strong> Live Hardware Benchmarks interface capturing physical Suite T5 scaling runs (Runs 44&ndash;61) across 0, 1, 2, and 3 workers for <code>MATMUL n=12</code> and <code>n=32</code> (100/100 commits on every run, <em>K</em> = 2 permits per active node).</figcaption>
+    </figure>
+
+    <figure style="margin-top:3pt;">
+      <img src="assets/ui_benchmarks_log.jpg" alt="Hardware Benchmarks Runs 41-46 and Live Event Log" class="shot" style="max-height:43mm;">
+      <figcaption><strong>Figure 11.</strong> Hardware Benchmarks (Runs 41&ndash;46) and live Event Log showing continuous auto-zoom Mandelbrot rendering from Frame 286 (5.7&times; zoom, 205 iter, 2,183 ms) through Frame 291 (2,878 ms) with 0 dropped log records.</figcaption>
+    </figure>
+  </div>
+  <div class="run-foot">
+    <span>FAST&ndash;NUCES Karachi &middot; Department of Cyber Security</span>
+    <span>Page 11 of 14</span>
+  </div>
+</section>
+
+<!-- ==================== PAGE 12: MEASURED PERFORMANCE RESULTS & GRAPHS ==================== -->
+<section class="page">
+  <div class="run-head">
+    <span><strong>CS-2006 Operating Systems</strong> &mdash; Project Report</span>
+    <span>10. Physical Hardware Scaling Results &amp; Comparative Analysis</span>
+  </div>
+  <div class="content">
+    <h1><span class="sec-num">10.</span>Physical Hardware Scaling Results &amp; Comparative Analysis</h1>
+
+    <h2>10.1 Aggregated Physical Suite T5 Dataset (Runs 41&ndash;61)</h2>
+    <p>Table 6 aggregates all 21 observed physical runs captured in Figures 10 and 11 across Suite T5 (100 deterministic seeded <code>MATMUL</code> jobs per run, <em>K</em> = 2 permits per participating board). Every single run achieved <strong>100 / 100</strong> exact commits with zero failures or lost jobs.</p>
+
+    <table class="small-table">
+      <thead>
+        <tr>
+          <th style="width:18%;">Configuration</th>
+          <th class="ctr" style="width:8%;">Trials</th>
+          <th class="num" style="width:15%;">Mean Throughput</th>
+          <th class="num" style="width:13%;">Mean p95 Lat.</th>
+          <th class="num" style="width:13%;">Mean Makespan</th>
+          <th class="num" style="width:14%;">Remote Speedup*</th>
+          <th style="width:19%;">Typical Split (M/A/B/C)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td class="key">n=12 &middot; 0 Workers (Master)</td><td class="ctr">2</td><td class="num">1,545.2 jobs/s</td><td class="num">71.0 ms</td><td class="num">0.115 s</td><td class="num">&mdash; (local)</td><td>100 / 0 / 0 / 0</td></tr>
+        <tr><td class="key">n=12 &middot; 1 Worker</td><td class="ctr">2</td><td class="num">123.1 jobs/s</td><td class="num">780.5 ms</td><td class="num">0.815 s</td><td class="num">1.00&times;</td><td>0 / 100 / 0 / 0</td></tr>
+        <tr><td class="key">n=12 &middot; 2 Workers</td><td class="ctr">3</td><td class="num">221.1 jobs/s</td><td class="num">419.3 ms</td><td class="num">0.453 s</td><td class="num">1.80&times;</td><td>0 / 50 / 50 / 0</td></tr>
+        <tr><td class="key">n=12 &middot; 3 Workers</td><td class="ctr">3</td><td class="num">241.5 jobs/s</td><td class="num">401.3 ms</td><td class="num">0.427 s</td><td class="num">1.91&times;</td><td>0 / 33 / 35 / 32</td></tr>
+        <tr><td class="key">n=32 &middot; 0 Workers (Master)</td><td class="ctr">3</td><td class="num">423.3 jobs/s</td><td class="num">4.7 ms</td><td class="num">0.233 s</td><td class="num">&mdash; (local)</td><td>100 / 0 / 0 / 0</td></tr>
+        <tr><td class="key">n=32 &middot; 1 Worker</td><td class="ctr">3</td><td class="num">109.0 jobs/s</td><td class="num">873.7 ms</td><td class="num">0.920 s</td><td class="num">1.00&times;</td><td>0 / 100 / 0 / 0</td></tr>
+        <tr><td class="key">n=32 &middot; 2 Workers</td><td class="ctr">3</td><td class="num">194.7 jobs/s</td><td class="num">482.7 ms</td><td class="num">0.513 s</td><td class="num">1.79&times;</td><td>0 / 49 / 51 / 0</td></tr>
+        <tr><td class="key">n=32 &middot; 3 Workers</td><td class="ctr">2</td><td class="num">243.6 jobs/s</td><td class="num">337.5 ms</td><td class="num">0.410 s</td><td class="num"><strong>2.24&times;</strong></td><td>0 / 34 / 34 / 32</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:7.6pt; color:#52606D; margin:-4pt 0 5pt 0;">*Remote Speedup = (1-worker mean makespan) / (N-worker mean makespan) for identical workload size and K=2. Run 47 (n=12, 0 workers) peaked at 2,564.1 jobs/s (0.04 s); Run 55 recorded 526.3 jobs/s (0.19 s) during concurrent WebSocket browser telemetry.</p>
+
+    <figure style="margin-top:2pt;">
+      <svg viewBox="0 0 760 168" xmlns="http://www.w3.org/2000/svg" font-family="Calibri, Segoe UI, Arial, sans-serif">
+        <rect width="760" height="168" fill="#FFFFFF"/>
+        <text x="380" y="16" text-anchor="middle" font-size="9.5" font-weight="700" fill="#1B365D">T5 Measured Throughput Comparison: Remote Scaling (1&ndash;3 Workers) vs. Local Master Execution</text>
+        <!-- Left subplot: Remote 1,2,3 workers (scale 0..300 jobs/s) -->
+        <text x="235" y="31" text-anchor="middle" font-size="8.3" font-weight="600" fill="#334155">Remote Cluster Scaling (0&ndash;300 jobs/s scale)</text>
+        <line x1="56" y1="40" x2="56" y2="138" stroke="#94A3B8"/>
+        <line x1="56" y1="138" x2="425" y2="138" stroke="#94A3B8"/>
+        <line x1="56" y1="40" x2="425" y2="40" stroke="#E2E8F0" stroke-dasharray="2 2"/>
+        <line x1="56" y1="72.7" x2="425" y2="72.7" stroke="#E2E8F0" stroke-dasharray="2 2"/>
+        <line x1="56" y1="105.3" x2="425" y2="105.3" stroke="#E2E8F0" stroke-dasharray="2 2"/>
+        <text x="50" y="43" text-anchor="end" font-size="7.4" fill="#52606D">300</text>
+        <text x="50" y="75.7" text-anchor="end" font-size="7.4" fill="#52606D">200</text>
+        <text x="50" y="108.3" text-anchor="end" font-size="7.4" fill="#52606D">100</text>
+        <text x="50" y="141" text-anchor="end" font-size="7.4" fill="#52606D">0</text>
+        <!-- Scale: 98px = 300 -> 0.3267 px/job/s -->
+        <!-- 1 Worker: n=12 123.1 (40.2px), n=32 109.0 (35.6px) -->
+        <rect x="86" y="97.8" width="38" height="40.2" fill="#2E6B9E"/>
+        <text x="105" y="94" text-anchor="middle" font-size="7.5" font-weight="700" fill="#2E6B9E">123.1</text>
+        <rect x="128" y="102.4" width="38" height="35.6" fill="#1B365D"/>
+        <text x="147" y="98.5" text-anchor="middle" font-size="7.5" font-weight="700" fill="#1B365D">109.0</text>
+        <text x="126" y="151" text-anchor="middle" font-size="8" font-weight="600" fill="#1F2937">1 Worker (2 cores)</text>
+
+        <!-- 2 Workers: n=12 221.1 (72.2px), n=32 194.7 (63.6px) -->
+        <rect x="204" y="65.8" width="38" height="72.2" fill="#2E6B9E"/>
+        <text x="223" y="62" text-anchor="middle" font-size="7.5" font-weight="700" fill="#2E6B9E">221.1</text>
+        <rect x="246" y="74.4" width="38" height="63.6" fill="#1B365D"/>
+        <text x="265" y="70.5" text-anchor="middle" font-size="7.5" font-weight="700" fill="#1B365D">194.7</text>
+        <text x="244" y="151" text-anchor="middle" font-size="8" font-weight="600" fill="#1F2937">2 Workers (4 cores)</text>
+
+        <!-- 3 Workers: n=12 241.5 (78.9px), n=32 243.6 (79.6px) -->
+        <rect x="322" y="59.1" width="38" height="78.9" fill="#2E6B9E"/>
+        <text x="341" y="55" text-anchor="middle" font-size="7.5" font-weight="700" fill="#2E6B9E">241.5</text>
+        <rect x="364" y="58.4" width="38" height="79.6" fill="#1B365D"/>
+        <text x="383" y="54.5" text-anchor="middle" font-size="7.5" font-weight="700" fill="#1B365D">243.6</text>
+        <text x="362" y="151" text-anchor="middle" font-size="8" font-weight="600" fill="#1F2937">3 Workers (6 cores)</text>
+
+        <!-- Divider -->
+        <line x1="450" y1="26" x2="450" y2="158" stroke="#CBD5E1" stroke-dasharray="3 2"/>
+
+        <!-- Right subplot: Local Master Only vs 3-Worker Remote (scale 0..1600) -->
+        <text x="605" y="31" text-anchor="middle" font-size="8.3" font-weight="600" fill="#334155">Local Shared-Memory Baseline (0 Workers)</text>
+        <line x1="494" y1="40" x2="494" y2="138" stroke="#94A3B8"/>
+        <line x1="494" y1="138" x2="736" y2="138" stroke="#94A3B8"/>
+        <line x1="494" y1="40" x2="736" y2="40" stroke="#E2E8F0" stroke-dasharray="2 2"/>
+        <line x1="494" y1="89" x2="736" y2="89" stroke="#E2E8F0" stroke-dasharray="2 2"/>
+        <text x="488" y="43" text-anchor="end" font-size="7.4" fill="#52606D">1600</text>
+        <text x="488" y="92" text-anchor="end" font-size="7.4" fill="#52606D">800</text>
+        <text x="488" y="141" text-anchor="end" font-size="7.4" fill="#52606D">0</text>
+        <!-- Scale: 98px = 1600 -> 0.06125 px/job/s -->
+        <rect x="528" y="43.4" width="44" height="94.6" fill="#2E6B9E"/>
+        <text x="550" y="39" text-anchor="middle" font-size="7.5" font-weight="700" fill="#2E6B9E">1545.2</text>
+        <text x="550" y="151" text-anchor="middle" font-size="7.8" fill="#1F2937">Master n=12</text>
+
+        <rect x="598" y="112.1" width="44" height="25.9" fill="#1B365D"/>
+        <text x="620" y="108" text-anchor="middle" font-size="7.5" font-weight="700" fill="#1B365D">423.3</text>
+        <text x="620" y="151" text-anchor="middle" font-size="7.8" fill="#1F2937">Master n=32</text>
+
+        <rect x="668" y="123.1" width="44" height="14.9" fill="#1F7A70"/>
+        <text x="690" y="119" text-anchor="middle" font-size="7.5" font-weight="700" fill="#1F7A70">243.6</text>
+        <text x="690" y="151" text-anchor="middle" font-size="7.8" fill="#1F2937">3W n=32</text>
+
+        <!-- Legend -->
+        <rect x="62" y="44" width="8" height="8" fill="#2E6B9E"/><text x="74" y="51" font-size="7.4" fill="#334155">MATMUL n=12 (1.7k ops)</text>
+        <rect x="195" y="44" width="8" height="8" fill="#1B365D"/><text x="207" y="51" font-size="7.4" fill="#334155">MATMUL n=32 (32.8k ops)</text>
+      </svg>
+      <figcaption><strong>Figure 12.</strong> Mean measured throughput (jobs/s) across Suite T5 physical runs. Scaling from 1 to 3 remote workers steadily boosts throughput, while local master execution highlights zero-network shared-memory speed on short sub-millisecond matrix kernels.</figcaption>
+    </figure>
+
+    <figure style="margin-top:4pt;">
+      <svg viewBox="0 0 760 154" xmlns="http://www.w3.org/2000/svg" font-family="Calibri, Segoe UI, Arial, sans-serif">
+        <rect width="760" height="154" fill="#FFFFFF"/>
+        <!-- Left: Remote Parallel Speedup (1W -> 2W -> 3W) -->
+        <text x="195" y="16" text-anchor="middle" font-size="9.2" font-weight="700" fill="#1B365D">A. Remote Worker Speedup vs. Ideal Linear Scaling</text>
+        <line x1="56" y1="28" x2="56" y2="124" stroke="#94A3B8"/>
+        <line x1="56" y1="124" x2="352" y2="124" stroke="#94A3B8"/>
+        <line x1="56" y1="28" x2="352" y2="28" stroke="#E2E8F0" stroke-dasharray="2 2"/>
+        <line x1="56" y1="60" x2="352" y2="60" stroke="#E2E8F0" stroke-dasharray="2 2"/>
+        <line x1="56" y1="92" x2="352" y2="92" stroke="#E2E8F0" stroke-dasharray="2 2"/>
+        <text x="50" y="31" text-anchor="end" font-size="7.4" fill="#52606D">3.0&times;</text>
+        <text x="50" y="63" text-anchor="end" font-size="7.4" fill="#52606D">2.0&times;</text>
+        <text x="50" y="95" text-anchor="end" font-size="7.4" fill="#52606D">1.0&times;</text>
+        <text x="50" y="127" text-anchor="end" font-size="7.4" fill="#52606D">0.0&times;</text>
+        <!-- x positions: 1W=96, 2W=204, 3W=312; y = 124 - val*32 -->
+        <!-- Ideal linear (1->2->3) -->
+        <polyline points="96,92 204,60 312,28" fill="none" stroke="#94A3B8" stroke-width="1.2" stroke-dasharray="4 3"/>
+        <text x="314" y="25" font-size="7.2" fill="#64748B">Ideal (3.0&times;)</text>
+        <!-- n=32 speedup: 1.00 -> 1.79 -> 2.24 -->
+        <polyline points="96,92 204,66.7 312,52.3" fill="none" stroke="#1B365D" stroke-width="2"/>
+        <circle cx="96" cy="92" r="3.5" fill="#1B365D"/>
+        <circle cx="204" cy="66.7" r="3.5" fill="#1B365D"/>
+        <circle cx="312" cy="52.3" r="3.5" fill="#1B365D"/>
+        <text x="204" y="59" text-anchor="middle" font-size="7.6" font-weight="700" fill="#1B365D">1.79&times;</text>
+        <text x="312" y="45" text-anchor="middle" font-size="7.8" font-weight="700" fill="#1B365D">2.24&times; (n=32)</text>
+        <!-- n=12 speedup: 1.00 -> 1.80 -> 1.91 -->
+        <polyline points="96,92 204,66.4 312,62.9" fill="none" stroke="#2E6B9E" stroke-width="1.6" stroke-dasharray="5 2"/>
+        <circle cx="96" cy="92" r="3" fill="#2E6B9E"/>
+        <circle cx="204" cy="66.4" r="3" fill="#2E6B9E"/>
+        <circle cx="312" cy="62.9" r="3" fill="#2E6B9E"/>
+        <text x="312" y="75" text-anchor="middle" font-size="7.5" font-weight="700" fill="#2E6B9E">1.91&times; (n=12)</text>
+
+        <text x="96" y="138" text-anchor="middle" font-size="8" fill="#1F2937">1 Worker</text>
+        <text x="204" y="138" text-anchor="middle" font-size="8" fill="#1F2937">2 Workers</text>
+        <text x="312" y="138" text-anchor="middle" font-size="8" fill="#1F2937">3 Workers</text>
+
+        <line x1="382" y1="12" x2="382" y2="144" stroke="#E2E8F0"/>
+
+        <!-- Right: p95 Tail Latency Drop (ms) -->
+        <text x="572" y="16" text-anchor="middle" font-size="9.2" font-weight="700" fill="#1B365D">B. p95 Tail Latency Reduction Across Remote Workers (ms)</text>
+        <rect x="590" y="22" width="7" height="7" fill="#2E6B9E"/><text x="600" y="28.5" font-size="7.1" fill="#334155">n=12</text>
+        <rect x="640" y="22" width="7" height="7" fill="#1B365D"/><text x="650" y="28.5" font-size="7.1" fill="#334155">n=32</text>
+        <line x1="436" y1="34" x2="436" y2="124" stroke="#94A3B8"/>
+        <line x1="436" y1="124" x2="736" y2="124" stroke="#94A3B8"/>
+        <line x1="436" y1="34" x2="736" y2="34" stroke="#E2E8F0" stroke-dasharray="2 2"/>
+        <line x1="436" y1="79" x2="736" y2="79" stroke="#E2E8F0" stroke-dasharray="2 2"/>
+        <text x="430" y="37" text-anchor="end" font-size="7.4" fill="#52606D">1000</text>
+        <text x="430" y="82" text-anchor="end" font-size="7.4" fill="#52606D">500</text>
+        <text x="430" y="127" text-anchor="end" font-size="7.4" fill="#52606D">0</text>
+        <!-- Scale: 90px = 1000ms -> 0.09 px/ms -->
+        <!-- 1W: n=12 780.5 (70.2), n=32 873.7 (78.6) -->
+        <rect x="462" y="53.8" width="32" height="70.2" fill="#2E6B9E"/>
+        <text x="478" y="49.5" text-anchor="middle" font-size="7.3" font-weight="700" fill="#2E6B9E">781</text>
+        <rect x="498" y="45.4" width="32" height="78.6" fill="#1B365D"/>
+        <text x="514" y="41" text-anchor="middle" font-size="7.3" font-weight="700" fill="#1B365D">874</text>
+        <text x="496" y="138" text-anchor="middle" font-size="8" fill="#1F2937">1 Worker</text>
+
+        <!-- 2W: n=12 419.3 (37.7), n=32 482.7 (43.4) -->
+        <rect x="562" y="86.3" width="32" height="37.7" fill="#2E6B9E"/>
+        <text x="578" y="82" text-anchor="middle" font-size="7.3" font-weight="700" fill="#2E6B9E">419</text>
+        <rect x="598" y="80.6" width="32" height="43.4" fill="#1B365D"/>
+        <text x="614" y="76.5" text-anchor="middle" font-size="7.3" font-weight="700" fill="#1B365D">483</text>
+        <text x="596" y="138" text-anchor="middle" font-size="8" fill="#1F2937">2 Workers</text>
+
+        <!-- 3W: n=12 401.3 (36.1), n=32 337.5 (30.4) -->
+        <rect x="662" y="87.9" width="32" height="36.1" fill="#2E6B9E"/>
+        <text x="678" y="83.5" text-anchor="middle" font-size="7.3" font-weight="700" fill="#2E6B9E">401</text>
+        <rect x="698" y="93.6" width="32" height="30.4" fill="#1B365D"/>
+        <text x="714" y="89.5" text-anchor="middle" font-size="7.3" font-weight="700" fill="#1B365D">338</text>
+        <text x="696" y="138" text-anchor="middle" font-size="8" fill="#1F2937">3 Workers</text>
+      </svg>
+      <figcaption><strong>Figure 13.</strong> (A) Remote speedup curves confirming Amdahl's Law: higher compute density (<code>n=32</code>) scales to 2.24&times; on 3 workers vs. 1.91&times; for communication-bound <code>n=12</code>. (B) Adding workers slashes p95 tail latency on <code>n=32</code> by <strong>61.4%</strong> (874 ms &rarr; 338 ms).</figcaption>
+    </figure>
+
+    <h2>10.2 Interpretation: Amdahl's Law &amp; Communication-to-Computation Ratio</h2>
+    <p>Two key operating systems insights emerge directly from Figures 12 and 13. First, for very small jobs (<code>MATMUL n=12</code>, 1,728 multiply-adds), local master execution (0 workers) outperforms remote distribution because TCP framing, Wi-Fi CSMA/CA contention on the 20 MHz SoftAP, and round-trip ACK/RESULT handling dominate sub-millisecond arithmetic. Second, comparing remote scaling across problem sizes directly validates <strong>Amdahl's Law</strong> (<em>OSC 10e</em> &sect;4.2): adding a third worker boosts <code>n=12</code> throughput by only <strong>+9.2%</strong> (221.1 &rarr; 241.5 jobs/s) because the radio channel saturates, whereas on the 18.9&times; heavier <code>n=32</code> workload (32,768 multiply-adds), the third worker adds <strong>+25.1%</strong> throughput (194.7 &rarr; 243.6 jobs/s) and drops p95 tail latency by a further <strong>30.1%</strong> (483 ms &rarr; 338 ms).</p>
+  </div>
+  <div class="run-foot">
+    <span>FAST&ndash;NUCES Karachi &middot; Department of Cyber Security</span>
+    <span>Page 12 of 14</span>
+  </div>
+</section>
+
+<!-- ==================== PAGE 13: LOAD DISTRIBUTION & RESOURCE HEADROOM ==================== -->
+<section class="page">
+  <div class="run-head">
+    <span><strong>CS-2006 Operating Systems</strong> &mdash; Project Report</span>
+    <span>11. Load Distribution, Render Scaling &amp; Resource Headroom</span>
+  </div>
+  <div class="content">
+    <h1><span class="sec-num">11.</span>Load Distribution, Render Scaling &amp; Resource Headroom</h1>
+
+    <h2>11.1 Multi-Worker Load Balance &amp; Mandelbrot Render Progression</h2>
+    <p>Unlike uniform matrix kernels, Mandelbrot tiles vary sharply in compute cost: boundary tiles near the fractal cardioid execute up to <code>max_iter</code> floating-point iterations per pixel, while exterior tiles escape in fewer than 10 iterations. Under capacity-aware least-loaded placement with <em>K</em> + 1 prefetch credits, workers that draw cheap exterior tiles return credits quickly and absorb additional tiles automatically. Across both irregular fractal frames (Frame 265: <strong>A 52 / B 51 / C 47</strong>) and uniform T5 batches (<code>n=32</code> 3-worker runs: <strong>A 34 / B 34 / C 32</strong> and <strong>A 35 / B 35 / C 30</strong>), deviation from an ideal 33.3% split stayed within &plusmn;2.5%.</p>
+
+    <figure style="margin-top:3pt;">
+      <svg viewBox="0 0 760 166" xmlns="http://www.w3.org/2000/svg" font-family="Calibri, Segoe UI, Arial, sans-serif">
+        <rect width="760" height="166" fill="#FFFFFF"/>
+        <!-- Left: Stacked horizontal bars for load balance -->
+        <text x="190" y="17" text-anchor="middle" font-size="9.2" font-weight="700" fill="#1B365D">A. Observed Job Distribution Across Workers A, B, C (%)</text>
+        <!-- Row 1: Frame 265 (52/51/47 of 150 -> 34.7%, 34.0%, 31.3%) -->
+        <text x="16" y="46" font-size="8" font-weight="600" fill="#1F2937">Mandelbrot Fr. 265</text>
+        <rect x="122" y="34" width="83.2" height="18" fill="#1F7A70"/>
+        <text x="163" y="46" text-anchor="middle" font-size="7.5" font-weight="700" fill="#FFFFFF">A: 52 (34.7%)</text>
+        <rect x="205.2" y="34" width="81.6" height="18" fill="#2E6B9E"/>
+        <text x="246" y="46" text-anchor="middle" font-size="7.5" font-weight="700" fill="#FFFFFF">B: 51 (34.0%)</text>
+        <rect x="286.8" y="34" width="75.2" height="18" fill="#1B365D"/>
+        <text x="324" y="46" text-anchor="middle" font-size="7.5" font-weight="700" fill="#FFFFFF">C: 47 (31.3%)</text>
+
+        <!-- Row 2: T5 n=32 Run 54 (34/34/32) -->
+        <text x="16" y="76" font-size="8" font-weight="600" fill="#1F2937">T5 n=32 (Run 54)</text>
+        <rect x="122" y="64" width="81.6" height="18" fill="#1F7A70"/>
+        <text x="162" y="76" text-anchor="middle" font-size="7.5" font-weight="700" fill="#FFFFFF">A: 34%</text>
+        <rect x="203.6" y="64" width="81.6" height="18" fill="#2E6B9E"/>
+        <text x="244" y="76" text-anchor="middle" font-size="7.5" font-weight="700" fill="#FFFFFF">B: 34%</text>
+        <rect x="285.2" y="64" width="76.8" height="18" fill="#1B365D"/>
+        <text x="323" y="76" text-anchor="middle" font-size="7.5" font-weight="700" fill="#FFFFFF">C: 32%</text>
+
+        <!-- Row 3: T5 n=12 Run 58 (32/35/33) -->
+        <text x="16" y="106" font-size="8" font-weight="600" fill="#1F2937">T5 n=12 (Run 58)</text>
+        <rect x="122" y="94" width="76.8" height="18" fill="#1F7A70"/>
+        <text x="160" y="106" text-anchor="middle" font-size="7.5" font-weight="700" fill="#FFFFFF">A: 32%</text>
+        <rect x="198.8" y="94" width="84.0" height="18" fill="#2E6B9E"/>
+        <text x="241" y="106" text-anchor="middle" font-size="7.5" font-weight="700" fill="#FFFFFF">B: 35%</text>
+        <rect x="282.8" y="94" width="79.2" height="18" fill="#1B365D"/>
+        <text x="322" y="106" text-anchor="middle" font-size="7.5" font-weight="700" fill="#FFFFFF">C: 33%</text>
+
+        <!-- Row 4: T5 n=32 Run 46 (35/35/30) -->
+        <text x="16" y="136" font-size="8" font-weight="600" fill="#1F2937">T5 n=32 (Run 46)</text>
+        <rect x="122" y="124" width="84.0" height="18" fill="#1F7A70"/>
+        <text x="164" y="136" text-anchor="middle" font-size="7.5" font-weight="700" fill="#FFFFFF">A: 35%</text>
+        <rect x="206.0" y="124" width="84.0" height="18" fill="#2E6B9E"/>
+        <text x="248" y="136" text-anchor="middle" font-size="7.5" font-weight="700" fill="#FFFFFF">B: 35%</text>
+        <rect x="290.0" y="124" width="72.0" height="18" fill="#1B365D"/>
+        <text x="326" y="136" text-anchor="middle" font-size="7.5" font-weight="700" fill="#FFFFFF">C: 30%</text>
+
+        <line x1="384" y1="12" x2="384" y2="156" stroke="#E2E8F0"/>
+
+        <!-- Right: Live Event Log Mandelbrot Frame Render Times (Frames 286-291) -->
+        <text x="572" y="17" text-anchor="middle" font-size="9.2" font-weight="700" fill="#1B365D">B. Live Auto-Zoom Mandelbrot Frame Render Time (ms)</text>
+        <line x1="436" y1="30" x2="436" y2="128" stroke="#94A3B8"/>
+        <line x1="436" y1="128" x2="740" y2="128" stroke="#94A3B8"/>
+        <line x1="436" y1="30" x2="740" y2="30" stroke="#E2E8F0" stroke-dasharray="2 2"/>
+        <line x1="436" y1="79" x2="740" y2="79" stroke="#E2E8F0" stroke-dasharray="2 2"/>
+        <text x="430" y="33" text-anchor="end" font-size="7.4" fill="#52606D">3000</text>
+        <text x="430" y="82" text-anchor="end" font-size="7.4" fill="#52606D">1500</text>
+        <text x="430" y="131" text-anchor="end" font-size="7.4" fill="#52606D">0</text>
+        <!-- Scale: 98px = 3000ms -> 0.03267 px/ms -->
+        <!-- Fr286: 2183 (71.3), Fr287: 1625 (53.1), Fr288: 1958 (64.0), Fr289: 2312 (75.5), Fr290: 2194 (71.7), Fr291: 2878 (94.0) -->
+        <rect x="448" y="56.7" width="34" height="71.3" fill="#2E6B9E"/>
+        <text x="465" y="53" text-anchor="middle" font-size="7.3" font-weight="700" fill="#1B365D">2183</text>
+        <text x="465" y="140" text-anchor="middle" font-size="7.2" fill="#1F2937">F286</text>
+        <text x="465" y="150" text-anchor="middle" font-size="6.7" fill="#52606D">5.7&times;/205</text>
+
+        <rect x="496" y="74.9" width="34" height="53.1" fill="#2E6B9E"/>
+        <text x="513" y="71" text-anchor="middle" font-size="7.3" font-weight="700" fill="#1B365D">1625</text>
+        <text x="513" y="140" text-anchor="middle" font-size="7.2" fill="#1F2937">F287</text>
+        <text x="513" y="150" text-anchor="middle" font-size="6.7" fill="#52606D">13.5&times;/247</text>
+
+        <rect x="544" y="64.0" width="34" height="64.0" fill="#2E6B9E"/>
+        <text x="561" y="60" text-anchor="middle" font-size="7.3" font-weight="700" fill="#1B365D">1958</text>
+        <text x="561" y="140" text-anchor="middle" font-size="7.2" fill="#1F2937">F288</text>
+        <text x="561" y="150" text-anchor="middle" font-size="6.7" fill="#52606D">32.1&times;/290</text>
+
+        <rect x="592" y="52.5" width="34" height="75.5" fill="#1B365D"/>
+        <text x="609" y="48.5" text-anchor="middle" font-size="7.3" font-weight="700" fill="#1B365D">2312</text>
+        <text x="609" y="140" text-anchor="middle" font-size="7.2" fill="#1F2937">F289</text>
+        <text x="609" y="150" text-anchor="middle" font-size="6.7" fill="#52606D">76.5&times;/332</text>
+
+        <rect x="640" y="56.3" width="34" height="71.7" fill="#1B365D"/>
+        <text x="657" y="52.3" text-anchor="middle" font-size="7.3" font-weight="700" fill="#1B365D">2194</text>
+        <text x="657" y="140" text-anchor="middle" font-size="7.2" fill="#1F2937">F290</text>
+        <text x="657" y="150" text-anchor="middle" font-size="6.7" fill="#52606D">182&times;/375</text>
+
+        <rect x="688" y="34.0" width="34" height="94.0" fill="#1F7A70"/>
+        <text x="705" y="30" text-anchor="middle" font-size="7.3" font-weight="700" fill="#1F7A70">2878</text>
+        <text x="705" y="140" text-anchor="middle" font-size="7.2" fill="#1F2937">F291</text>
+        <text x="705" y="150" text-anchor="middle" font-size="6.7" fill="#52606D">deep zoom</text>
+      </svg>
+      <figcaption><strong>Figure 14.</strong> (A) Load distribution across Workers A, B, and C remains tightly balanced across both irregular fractal frames and matrix batches. (B) Measured end-to-end 150-tile frame completion times from the live Event Log (Figure 11) as auto-zoom increases iteration depth from 205 to 375+.</figcaption>
+    </figure>
+
+    <h2>11.2 Memory Stability &amp; Stack Headroom Across Environments</h2>
+    <p>Embedded real-time software fails silently if task stacks overflow or heap fragments under prolonged load. Table 7 summarizes verified heap and stack watermarks collected both from live four-board operation (with active Wi-Fi, TCP links, and HTTP/WebSocket telemetry) and from controlled dual-core QEMU self-tests.</p>
+
+    <table class="small-table">
+      <thead>
+        <tr>
+          <th style="width:24%;">Node / Environment</th>
+          <th style="width:20%;">Free Heap (Idle / Steady)</th>
+          <th style="width:20%;">Minimum Heap Observed</th>
+          <th style="width:36%;">Measured Stack Headroom (Lowest Task Free Bytes)</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="key">Master ESP32-S3 (Live HW)</td>
+          <td>7,751 KB (PSRAM + SRAM)</td>
+          <td>Stable at 22m24s uptime</td>
+          <td><code>dispatcher</code> 3,024 B; <code>link_tx</code> 2,728 B; <code>exec_1/2</code> 1,776 B; <code>tcpip</code> 1,676 B; <code>IDLE0/1</code> 760 B</td>
+        </tr>
+        <tr>
+          <td class="key">Workers A, B, C (Live HW)</td>
+          <td>153 KB each (internal SRAM)</td>
+          <td>Identical across all 3 boards</td>
+          <td>All 4 executors + Wi-Fi/TCP links active with zero watchdog or allocation errors</td>
+        </tr>
+        <tr>
+          <td class="key">ESP32 Worker (QEMU Dual)</td>
+          <td>250,328 B before &amp; after</td>
+          <td>233,976 B (0 B leak)</td>
+          <td>Smallest executor high-water mark: <strong>2,208 B</strong> free out of 3,072 B stack</td>
+        </tr>
+        <tr>
+          <td class="key">ESP32-S3 (QEMU Dual)</td>
+          <td>343,836 B before &amp; after</td>
+          <td>327,360 B (0 B leak)</td>
+          <td>Smallest executor high-water mark: <strong>1,984 B</strong> free out of 3,072 B stack</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>11.3 End-to-End Objectives Verification Summary</h2>
+    <p>All eight project objectives defined in Table 1 were verified on physical hardware and automated tests. The shared bounded queue (O1) processed over 46,692 jobs with 4% mutex contention and clean producer back-pressure. The 4-thread pool and semaphore permits (O2) maintained strict concurrency bounds while enabling live slot scaling (O6). Completion reporting (O3) achieved zero failed jobs and rejected 5 delayed duplicates cleanly. Priority + aging and least-loaded placement (O4) bounded low-priority waits near 1.2 s while splitting 150-tile frames uniformly across A, B, and C. Failure supervision (O5) detected a live Worker B fault in 3,024 ms and requeued all 5 affected jobs. Non-blocking logging, task monitoring, and statistics (O7) ran continuously with zero dropped log entries, and Labs A&ndash;D (O8) reproduced every classic synchronization phenomenon on real silicon.</p>
+  </div>
+  <div class="run-foot">
+    <span>FAST&ndash;NUCES Karachi &middot; Department of Cyber Security</span>
+    <span>Page 13 of 14</span>
+  </div>
+</section>
+
+<!-- ==================== PAGE 14: LIMITATIONS, LESSONS, CONCLUSION & REFERENCES ==================== -->
+<section class="page">
+  <div class="run-head">
+    <span><strong>CS-2006 Operating Systems</strong> &mdash; Project Report</span>
+    <span>12. Limitations, Conclusion &amp; References</span>
+  </div>
+  <div class="content">
+    <h1><span class="sec-num">12.</span>Limitations, Engineering Lessons &amp; Conclusion</h1>
+
+    <h2>12.1 Stated Architectural Limitations</h2>
+    <p>An accurate systems evaluation must state its boundaries clearly alongside its achievements:</p>
+    <ul>
+      <li><strong>Master Single Point of Failure:</strong> NEXUS tolerates any combination of worker crashes, but the master coordinator itself is not replicated. Surviving master failure would require state-machine replication and leader election (<em>OSC 10e</em> &sect;19.5), which lies outside the scope of CS-2006 Project #2.</li>
+      <li><strong>At-Least-Once Execution Semantics:</strong> If a worker experiences a transient network pause exceeding the 3.0 s heartbeat threshold, its jobs are requeued and may execute a second time elsewhere before the delayed result arrives. Exactly-once guarantees apply strictly to the <em>commit</em> point (<code>jq_commit</code>), which is sound for idempotent deterministic workloads.</li>
+      <li><strong>Sampled Monitor vs. Exact Scheduler Trace:</strong> The FreeRTOS task table samples <code>uxTaskGetSystemState()</code> every 500 ms rather than recording every microsecond context switch (which requires JTAG trace hardware such as Segger SystemView).</li>
+      <li><strong>Kernel Granularity &amp; Radio Contention:</strong> As demonstrated in Suite T5, distributing sub-millisecond workloads (<code>MATMUL n=12</code>) over 2.4 GHz Wi-Fi incurs higher IPC latency than local shared-memory execution; distributed speedup materializes only when per-job computation outweighs message-passing overhead.</li>
+      <li><strong>Lab-Scope Transport Security:</strong> The dashboard serves plain HTTP/WebSocket over a WPA2-protected local SoftAP, which is appropriate for an isolated lab cluster but would require TLS and client authentication in an untrusted network.</li>
+    </ul>
+
+    <h2>12.2 Key Engineering Lessons Learned</h2>
+    <p>Building a real-time multithreaded orchestrator on resource-constrained dual-core microcontrollers surfaced practical kernel behaviors that desktop simulations often obscure:</p>
+    <ul>
+      <li><strong>Task Watchdog &amp; Idle Starvation:</strong> Two CPU-bound executors pinned across Core 0 and Core 1 can completely starve both FreeRTOS <code>IDLE</code> tasks and trip ESP-IDF's 5-second Task Watchdog. Inserting a single-tick yield (<code>vTaskDelay(1)</code>) at least once per second inside the executor loop preserved full throughput while keeping watchdog health clean.</li>
+      <li><strong>Wi-Fi Power-Save &amp; Bandwidth Tuning:</strong> Leaving ESP-IDF's default STA modem-sleep enabled adds up to 100 ms of beacon-interval latency per dispatch. Explicitly disabling power save (<code>WIFI_PS_NONE</code>) and pinning the SoftAP to 20 MHz bandwidth with TCP keepalives stabilized multi-worker links during long-running sessions.</li>
+      <li><strong>ESP-IDF v6.1 WebSocket Discovery:</strong> Discovering active WebSocket file descriptors via <code>httpd_get_client_list()</code> rather than relying on an initial <code>HTTP_GET</code> handler invocation fixed silent telemetry drops during idle connections.</li>
+    </ul>
+
+    <h2>12.3 Conclusion</h2>
+    <p>NEXUS fulfills all mandatory and extended requirements of CS-2006 Project #2 through a clean, self-contained C11 and FreeRTOS implementation running across eight physical CPU cores on four ESP32 boards. By pairing a shared bounded-buffer node engine with two-level scheduling, acyclic deadlock-free locking, framed message passing, heartbeat/lease fault recovery, and an offline interactive Control Center, the project makes core operating system principles directly observable and quantitatively verifiable. Live hardware sessions exceeding 46,692 committed jobs, 15.9&times; priority-inversion latency reduction on Worker A, 3.024 s failure detection with automatic requeuing, and 2.24&times; remote worker scaling on 32&times;32 matrix workloads confirm both functional correctness and predictable real-time performance.</p>
+
+    <h2>12.4 References</h2>
+    <ol class="ref-list">
+      <li>A. Silberschatz, P. B. Galvin, and G. Gagne, <em>Operating System Concepts</em>, 10th ed. Hoboken, NJ: Wiley, 2018. (Referenced sections: &sect;3.4 Message Passing, &sect;4.2 Amdahl's Law, &sect;4.5.1 Thread Pools, &sect;5.3.4 Priority Scheduling &amp; Aging, &sect;6.6 Semaphores, &sect;6.8.2 Priority Inversion, &sect;7.1.1 Bounded-Buffer Problem, &sect;8.5 Deadlock Prevention, &sect;19.5 Failure Detection).</li>
+      <li>Espressif Systems, <em>ESP-IDF Programming Guide v6.1: FreeRTOS (IDF) SMP &amp; ESP-HTTPD Reference</em>, 2026. Available: <code>https://docs.espressif.com/projects/esp-idf/</code>.</li>
+      <li>Espressif Systems, <em>ESP32-S3 Technical Reference Manual</em> and <em>ESP32-WROOM-32D / ESP32-WROOM-32U Datasheet</em>, Espressif Systems, 2025&ndash;2026.</li>
+      <li>Real Time Engineers Ltd., <em>Mastering the FreeRTOS Real Time Kernel: A Practical Guide</em>, AWS / FreeRTOS Documentation, 2024.</li>
+    </ol>
+  </div>
+  <div class="run-foot">
+    <span>FAST&ndash;NUCES Karachi &middot; Department of Cyber Security</span>
+    <span>Page 14 of 14</span>
+  </div>
+</section>
+
+</body>
+</html>

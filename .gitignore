@@ -1,0 +1,29 @@
+# Internal workspace notes, session logs, and course reference PDFs (root-only)
+/codex_memory/
+/DOCs/
+/proposal/
+/requirements/
+/PROJECT_MEMORY.md
+/PROJECT_DECISIONS.md
+/INSTRUCTOR_MESSAGE.md
+
+# Enforce C11 / ESP-IDF only (no Python files in repository)
+*.py
+__pycache__/
+
+# ESP-IDF build outputs, generated configs, and logs
+build/
+sdkconfig
+sdkconfig.old
+build_log.txt
+managed_components/
+dependencies.lock
+release/
+test-output/
+node_modules/
+
+# OS / editor artifacts
+.DS_Store
+Thumbs.db
+*.swp
+*.swo

@@ -1,0 +1,9 @@
+build/
+sdkconfig
+sdkconfig.old
+build_log.txt
+managed_components/
+dependencies.lock
+release/
+test-output/
+node_modules/

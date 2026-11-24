@@ -1,0 +1,13 @@
+cmake_minimum_required(VERSION 3.22)
+
+if(NOT DEFINED IDF_TARGET AND NOT DEFINED ENV{IDF_TARGET})
+    set(IDF_TARGET esp32)
+endif()
+if(NOT DEFINED SDKCONFIG)
+    set(SDKCONFIG "${CMAKE_BINARY_DIR}/sdkconfig")
+endif()
+set(COMPONENTS main)
+set(EXTRA_COMPONENT_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../components")
+set(SDKCONFIG_DEFAULTS "${CMAKE_CURRENT_LIST_DIR}/../../sdkconfig.common;${CMAKE_CURRENT_LIST_DIR}/sdkconfig.defaults")
+include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+project(nexus_device_selftest)

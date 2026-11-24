@@ -1,0 +1,19 @@
+menu "NEXUS"
+
+    config NX_WIFI_SSID
+        string "Cluster Wi-Fi name (SSID)"
+        default "NEXUS-OS"
+
+    config NX_WIFI_PASSWORD
+        string "Cluster Wi-Fi password (WPA2, at least 8 characters)"
+        default "nexus-os-lab"
+        help
+            Change this for your own demo with: idf.py menuconfig -> NEXUS.
+            It is a lab password for an offline network, not a secret.
+
+    config NX_WIFI_CHANNEL
+        int "Wi-Fi channel of the master's access point"
+        range 1 13
+        default 6
+
+endmenu

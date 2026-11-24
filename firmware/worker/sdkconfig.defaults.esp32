@@ -1,0 +1,6 @@
+# Classic ESP32 workers use internal SRAM and both FreeRTOS cores.
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
+# CONFIG_SPIRAM is not set
+# CONFIG_FREERTOS_UNICORE is not set
+# Retain the classic ESP32 SDK radio-library profile. The app runs as STA.
+CONFIG_ESP_WIFI_SOFTAP_SUPPORT=y

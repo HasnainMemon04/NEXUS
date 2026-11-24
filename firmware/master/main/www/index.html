@@ -1,0 +1,1202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NEXUS Control Center</title>
+<!-- NEXUS Control Center. Self-contained (no CDN, no fonts to download): served gzip-compressed
+     from the master ESP32-S3's flash. Live data comes from the master over a WebSocket. -->
+<style>
+:root {
+  color-scheme: dark;
+  --bg: #0c131d; --surface: #141e2b; --inset: #0e1722; --line: #2a3a4e; --line2: #3c5067;
+  --text: #edf3fa; --muted: #a7b6c8; --dim: #8d9eb2; --cyan: #71d9f0;
+  --green: #77e0ac; --amber: #ffcb76; --red: #ff949b;
+  --wM: #ffcb76; --wA: #63dac4; --wB: #baaaff; --wC: #81c9ff;
+  --p0: #a1aec0; --p1: #77cdfa; --p2: #c2afff; --p3: #ffa3cc;
+  --mono: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --radius: 13px; --gap: 16px;
+}
+* { box-sizing: border-box; }
+html { scroll-padding-top: 82px; }
+body { margin: 0; color: var(--text); background: var(--bg); font: 14px/1.48 "Segoe UI", system-ui, sans-serif; font-variant-numeric: tabular-nums; }
+button, input, select { font: inherit; color: inherit; }
+button, select { touch-action: manipulation; }
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible, #stage:focus-visible, [tabindex]:focus-visible {
+  outline: 2px solid var(--cyan); outline-offset: 3px;
+}
+a { color: inherit; }
+[hidden] { display: none !important; }
+.muted { color: var(--muted); }
+.dim { color: var(--dim); }
+.mono { font-family: var(--mono); }
+
+/* Shell and navigation */
+.top { position: sticky; top: 0; z-index: 5; border-bottom: 1px solid var(--line); background: #0e1722; }
+.top-inner { max-width: 1512px; margin: 0 auto; padding: 0 28px; min-height: 64px; display: flex; align-items: center; gap: 28px; }
+.brand { display: flex; align-items: center; gap: 11px; text-decoration: none; white-space: nowrap; }
+.brand svg { color: var(--cyan); flex: none; }
+.brand strong { display: block; font-size: 16px; line-height: 1.1; letter-spacing: .12em; }
+.brand small { display: block; margin-top: 2px; color: var(--muted); font-size: 11px; }
+.nav { display: flex; align-items: center; gap: 3px; flex: 1; min-width: 0; }
+.nav a { color: var(--muted); white-space: nowrap; padding: 8px 10px; border-radius: 7px; text-decoration: none; font-size: 13px; }
+.nav a:hover { color: var(--text); background: #213147; }
+.live { display: flex; align-items: center; gap: 12px; color: var(--muted); white-space: nowrap; }
+.live small { font: 11px var(--mono); }
+.conn { display: inline-flex; align-items: center; gap: 7px; color: var(--amber); background: #3b3020; padding: 6px 9px; border-radius: 6px; font-weight: 650; font-size: 12px; }
+.conn::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: currentColor; }
+.conn.up { color: var(--green); background: #17372e; }
+.app { max-width: 1512px; margin: 0 auto; padding: 24px 28px 36px; display: grid; gap: var(--gap);
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.14fr) minmax(0, 1.02fr);
+  grid-template-areas: "overview overview overview" "map frac frac" "board board sched" "os os prim" "lab lab lab" "bench bench bench" "log log log"; }
+.overview { grid-area: overview; min-width: 0; }
+.overview-heading { display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 8px; margin-bottom: 13px; }
+h1 { margin: 0; font-size: clamp(23px, 3vw, 33px); letter-spacing: -.035em; line-height: 1.15; }
+.kpis { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.kpi { min-width: 0; padding: 11px 14px; }
+.kpi + .kpi { border-inline-start: 1px solid var(--line); }
+.kpi span { display: block; color: var(--muted); font-size: 12px; }
+.kpi b { display: block; margin-top: 2px; font-size: clamp(17px, 2vw, 23px); font-weight: 650; line-height: 1.15; }
+.kpi b small { color: var(--muted); font-size: 11px; font-weight: 500; margin-left: 4px; }
+.notice { margin: 10px 0 0; padding: 8px 10px; background: #2e261c; border: 1px solid #735637; border-radius: 7px; color: #ffdb9f; }
+#commandStatus { margin: 0; }
+#commandStatus:not(:empty) { position: fixed; z-index: 6; inset: auto 14px 14px auto; max-width: min(420px, calc(100vw - 28px)); padding: 8px 11px; border: 1px solid #439b83; border-radius: 7px; color: #d0f9ea; background: #163a31; }
+#commandStatus.error { border-color: #ad696f; color: #ffced0; background: #412632; }
+.panel { min-width: 0; padding: 16px; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); }
+.ph { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+.ph h2 { margin: 0; font-size: 17px; letter-spacing: -.012em; line-height: 1.25; }
+.ph .sp { flex: 1; }
+.chip { display: inline-block; padding: 2px 6px; border: 1px solid var(--line2); border-radius: 5px; font: 10px/1.4 var(--mono); color: var(--muted); }
+.map { grid-area: map; }
+.frac { grid-area: frac; display: flex; flex-direction: column; }
+.board { grid-area: board; align-self: start; }
+.sched { grid-area: sched; }
+.os { grid-area: os; }
+.prim { grid-area: prim; }
+.lab { grid-area: lab; }
+.bench { grid-area: bench; }
+.logp { grid-area: log; }
+
+/* Interaction */
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.seg { display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border: 1px solid var(--line); border-radius: 8px; background: var(--inset); }
+.seg button, .btn, .mini, select { border: 1px solid var(--line2); border-radius: 7px; background: #1a2a3c; cursor: pointer; transition: border-color .16s, background-color .16s; }
+.seg button { border-color: transparent; background: transparent; color: var(--muted); }
+.seg button, .btn, select { min-height: 35px; padding: 6px 10px; font-size: 12px; line-height: 1.25; }
+.btn { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
+.seg button:hover, .btn:hover, .mini:hover, select:hover { border-color: var(--cyan); }
+.seg button.on, .btn.on { color: #b8f0fb; border-color: #4295a6; background: #174553; }
+.btn.red { background: #3c2430; border-color: #7c4858; color: #ffbdc2; }
+.btn.amb { background: #3b3020; border-color: #755d38; color: #ffe0a4; }
+button:disabled { opacity: .52; cursor: not-allowed; }
+button[aria-busy="true"] { cursor: progress; }
+fieldset { min-width: 0; padding: 0; border: 0; margin: 0; }
+.skip { position: absolute; left: 12px; top: -60px; background: var(--inset); padding: 8px; }
+.skip:focus { top: 8px; z-index: 9; }
+
+/* Physical topology and workload */
+#mapsvg { width: 100%; height: auto; max-height: 210px; display: block; border: 1px solid var(--line); border-radius: 9px; background: var(--inset); }
+.node-rect { transition: stroke .25s, opacity .25s; }
+.ring { fill: none; stroke-width: 2; opacity: 0; transform-box: fill-box; transform-origin: center; }
+.ring.go { animation: ring .84s ease-out; }
+@keyframes ring { from { opacity: .9; transform: scale(.9); } to { opacity: 0; transform: scale(1.38); } }
+.nodes { display: grid; gap: 7px; margin-top: 10px; }
+.nrow { display: grid; grid-template-columns: minmax(86px, .7fr) minmax(0, 2fr); gap: 3px 10px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 8px; background: var(--inset); }
+.nrow .nm { font-weight: 650; font-size: 12px; }
+.nrow .st { display: inline-block; padding: 1px 5px; border-radius: 4px; font-size: 9px; letter-spacing: .04em; font-weight: 700; }
+.st.ONLINE { color: #a1edc8; background: #154333; }
+.st.SUSPECT { color: #ffda95; background: #4b3820; }
+.st.OFFLINE { color: #ffc2c4; background: #532938; }
+.st.LOCAL { color: #ffdb91; background: #4b3820; }
+.st.JOINING, .st.COORDINATOR, .st.DRAINING { color: #c4d4e7; background: #314157; }
+.node-controls { margin-top: 8px; }
+.node-controls .btn { min-height: 30px; font-size: 11px; }
+.nrow .meta { font: 10px/1.45 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.nrow .details { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 7px; color: var(--muted); font-size: 10px; }
+.bars { display: grid; grid-template-columns: auto minmax(10px, 1fr) auto; gap: 2px 6px; align-items: center; margin: 3px 0; font-size: 10px; color: var(--muted); }
+.bar { height: 5px; border-radius: 3px; background: #263648; overflow: hidden; }
+.bar i { display: block; height: 100%; border-radius: 3px; background: var(--cyan); transition: width .32s; }
+.slots { display: inline-flex; gap: 4px; align-items: center; }
+.slot { width: 13px; height: 9px; border-radius: 2px; border: 1px solid var(--line2); background: var(--inset); }
+.slot.perm { border-color: var(--cyan); }
+.slot.busy { background: currentColor; border-color: currentColor; }
+.slot.over { background: repeating-linear-gradient(45deg, currentColor 0 2px, transparent 2px 4px); border-color: currentColor; }
+.stage { position: relative; align-self: center; width: min(100%, 750px); aspect-ratio: 3 / 2; overflow: hidden; border-radius: 9px; background: #070f1a; border: 1px solid var(--line); cursor: zoom-in; }
+.stage[aria-disabled="true"] { cursor: not-allowed; }
+.stage canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hud { position: absolute; inset: auto 8px 8px; display: flex; gap: 5px; flex-wrap: wrap; pointer-events: none; }
+.hud span { padding: 3px 6px; border: 1px solid #43566b; border-radius: 4px; color: #e1edf7; background: #101a28eb; font: 10px var(--mono); }
+.stage-message { position: absolute; inset: 0; display: grid; place-items: center; margin: 0; padding: 16px; text-align: center; color: #bdcce0; pointer-events: none; }
+.prog { height: 5px; margin: 10px 0 8px; border-radius: 5px; background: #283a4f; overflow: hidden; }
+.prog i { display: block; height: 100%; width: 0; background: var(--cyan); transition: width .2s; }
+.legend { display: flex; flex-wrap: wrap; gap: 5px 12px; color: var(--muted); font-size: 11px; }
+.legend i { display: inline-block; width: 8px; height: 8px; border-radius: 2px; margin-right: 5px; }
+
+/* Queue, statistics and OS task tables */
+.cols { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.col { min-width: 0; min-height: 134px; padding: 8px; border: 1px solid var(--line); border-radius: 8px; background: var(--inset); }
+.col h3 { margin: 0 0 6px; font-size: 11px; font-weight: 600; display: flex; justify-content: space-between; gap: 4px; color: var(--muted); }
+.col h3 b { color: var(--text); }
+.card { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 0 5px; align-items: center; margin-bottom: 4px; padding: 4px 5px; border-radius: 4px; background: #1b2a3b; border-inline-start: 2px solid var(--p0); font-size: 10px; }
+.card b { font: 10px var(--mono); color: var(--text); }
+.card em { font-style: normal; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.card i { font-style: normal; font-weight: 650; }
+.card.p1 { border-inline-start-color: var(--p1); }
+.card.p2 { border-inline-start-color: var(--p2); }
+.card.p3 { border-inline-start-color: var(--p3); }
+.more { color: var(--dim); font-size: 11px; text-align: center; }
+.chart { width: 100%; height: 132px; display: block; }
+.stats, .cores { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin-top: 8px; }
+.stat, .core { min-width: 0; padding: 6px 8px; border-radius: 7px; background: var(--inset); }
+.stat span, .core span { display: block; color: var(--muted); font-size: 10px; }
+.stat b, .core b { font-size: 15px; }
+.cores { grid-template-columns: repeat(2, minmax(0, 1fr)); margin: 0 0 9px; }
+.cores.single { grid-template-columns: minmax(0, 1fr); }
+.core .bar { margin-top: 5px; }
+.table-scroll { overflow: auto; max-width: 100%; scrollbar-color: #46617a transparent; }
+table.tt { width: 100%; border-collapse: collapse; font-size: 12px; }
+table.tt th, table.tt td { text-align: left; padding: 5px 7px; white-space: nowrap; border-bottom: 1px solid var(--line); }
+table.tt th { color: var(--muted); font-size: 11px; font-weight: 600; }
+table.tt td.n { font: 11px var(--mono); }
+.ts { display: inline-block; min-width: 53px; padding: 1px 4px; border-radius: 4px; text-align: center; font-size: 9px; font-weight: 650; }
+.ts.RUN { color: #a1edc8; background: #1d4938; }
+.ts.RDY { color: #baebff; background: #1a425e; }
+.ts.BLK { color: #c4d4e7; background: #314157; }
+.ts.SUS { color: #ffda95; background: #4b3820; }
+.cpu { display: inline-block; width: 40px; height: 5px; margin-right: 4px; border-radius: 3px; background: #263648; vertical-align: middle; overflow: hidden; }
+.cpu i { display: block; height: 100%; background: var(--cyan); }
+.offline-note { padding: 14px 0; color: var(--muted); }
+
+/* Synchronization, recovery, experiments */
+.buf { display: grid; grid-template-columns: repeat(32, minmax(0, 1fr)); gap: 2px; margin: 8px 0; }
+.buf i { aspect-ratio: 1; border-radius: 1px; background: #2a3a4f; }
+.kv { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 6px; color: var(--muted); font-size: 12px; }
+.kv b { color: var(--text); font: 11px var(--mono); text-align: right; }
+.sub { margin-top: 13px; padding-top: 10px; border-top: 1px solid var(--line); }
+.sub h4 { margin: 0 0 7px; color: var(--muted); font-size: 12px; }
+.semrow { display: grid; grid-template-columns: minmax(54px, .7fr) minmax(0, 1.8fr) auto; align-items: center; gap: 5px; margin-bottom: 4px; font-size: 11px; }
+.semrow .execution { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.mini { width: 30px; height: 29px; padding: 0; }
+.labgrid { display: grid; grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr); gap: 18px; }
+.exps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.exp { display: flex; flex-direction: column; align-items: flex-start; gap: 7px; min-width: 0; padding: 10px; border: 1px solid var(--line); border-radius: 8px; background: var(--inset); }
+.exp h3 { margin: 0; font-size: 13px; }
+.exp p { margin: 0; font-size: 12px; color: var(--muted); flex: 1; }
+.exp .res { min-height: 1.45em; font-size: 11px; }
+.exp .res .big { font-size: 16px; font-weight: 650; }
+.tl { position: relative; height: 7px; margin: 3px 0; border-radius: 4px; overflow: hidden; background: #2a3a4f; }
+.tl i { position: absolute; inset-block: 0; }
+.faults { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.faults .btn { text-align: center; }
+.rec { margin-top: 8px; min-height: 47px; padding: 7px; color: var(--muted); background: var(--inset); border-radius: 7px; font-size: 12px; }
+.rec b { color: var(--text); }
+input[type=range] { accent-color: var(--cyan); min-width: 90px; }
+.bench-chart { display: grid; grid-template-columns: repeat(auto-fit, minmax(112px, 1fr)); gap: 7px; margin: 10px 0; }
+.bench-bar { display: grid; gap: 4px; padding: 7px; border: 1px solid var(--line); border-radius: 6px; color: var(--muted); font-size: 11px; }
+.bench-bar b { color: var(--text); }
+.bench-bar .bar i { background: var(--wA); }
+.bench-bar.fail .bar i { background: var(--red); }
+.log { height: 205px; overflow: auto; padding: 7px 9px; background: var(--inset); border: 1px solid var(--line); border-radius: 8px; font: 11px/1.55 var(--mono); }
+.log div { overflow-wrap: anywhere; }
+.log .t { color: var(--dim); }
+.log .k { font-weight: 650; margin: 0 6px; }
+.log .w { color: var(--amber); }
+.log .e { color: var(--red); }
+.log .ok { color: var(--green); }
+
+@media (max-width: 1140px) {
+  .top-inner, .app { padding-inline: 16px; }
+  .top-inner { gap: 12px; }
+  .top-inner .live small { display: none; }
+  .app { grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr); grid-template-areas: "overview overview" "map frac" "board board" "sched prim" "os os" "lab lab" "bench bench" "log log"; }
+}
+@media (max-width: 740px) {
+  html { scroll-padding-top: 102px; }
+  .top-inner { flex-wrap: wrap; justify-content: space-between; gap: 4px 10px; padding-block: 7px; }
+  .nav { order: 3; flex: 0 0 100%; overflow: auto; padding: 2px 0 4px; }
+  .nav a { padding-inline: 8px; }
+  .app { padding: 15px 12px 23px; gap: 11px; grid-template-columns: minmax(0, 1fr); grid-template-areas: "overview" "frac" "map" "board" "sched" "os" "prim" "lab" "bench" "log"; }
+  .panel { padding: 12px; }
+  .kpis { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .kpi:nth-child(4) { border-inline-start: 0; }
+  .kpi:nth-child(n+4) { border-top: 1px solid var(--line); }
+  .kpi { padding: 8px 9px; }
+  .cols { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .labgrid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+}
+@media (pointer: coarse) {
+  .btn, .seg button, .nav a, select, .node-controls .btn { min-height: 44px; }
+  .mini { width: 44px; height: 44px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+}
+</style>
+</head>
+<body>
+
+
+<a class="skip" href="#overview">Skip to cluster overview</a>
+<header class="top">
+  <div class="top-inner">
+    <a class="brand" href="#overview">
+      <svg width="33" height="33" viewBox="0 0 34 34" aria-hidden="true">
+        <path d="M17 2 30 9.5v15L17 32 4 24.5v-15z M11 23V11l12 12V11" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span><strong>NEXUS</strong><small>Control Center</small></span>
+    </a>
+    <nav class="nav" aria-label="Dashboard sections">
+      <a href="#overview">Overview</a><a href="#jobBoard">Jobs</a><a href="#monitor">Monitor</a>
+      <a href="#labs">Labs</a><a href="#benchmarks">Benchmarks</a>
+    </nav>
+    <div class="live"><small id="k-nodes">— nodes</small><span class="conn" id="conn" role="status">Connecting</span></div>
+  </div>
+</header>
+
+<main class="app">
+  <section class="overview" id="overview" aria-labelledby="overviewTitle">
+    <div class="overview-heading"><h1 id="overviewTitle">Cluster overview</h1><span class="muted mono" style="font-size:11px">NEXUS-OS · Uptime <span id="k-up">—</span></span></div>
+    <div class="kpis">
+      <div class="kpi"><span>Throughput</span><b id="k-thr">—<small>jobs/s</small></b></div>
+      <div class="kpi"><span>p95 latency</span><b id="k-p95">—<small>ms</small></b></div>
+      <div class="kpi"><span>Queued</span><b id="k-q">—</b></div>
+      <div class="kpi"><span>Executing / permits</span><b id="k-run">—</b></div>
+      <div class="kpi"><span>Committed</span><b id="k-done">—</b></div>
+      <div class="kpi"><span>Retries / duplicates</span><b id="k-ret">—</b></div>
+    </div>
+    <p id="connectionNotice" class="notice" hidden></p>
+    <p id="commandStatus" class="muted" role="status"></p>
+  </section>
+
+
+  <!-- ===== Cluster map ===== -->
+  <section class="panel map">
+    <div class="ph"><h2>Node topology</h2><span class="sp"></span><span class="chip">Wi-Fi · TCP</span></div>
+    <svg id="mapsvg" viewBox="0 0 360 210" role="img" aria-label="Cluster map showing messages between the master and three workers">
+      <path id="pathA" d="M180 66 Q 80 80 62 128" fill="none" stroke="rgba(99,218,196,.36)" stroke-width="1.6" stroke-dasharray="4 5"/>
+      <path id="pathB" d="M180 66 L180 128" fill="none" stroke="rgba(186,170,255,.36)" stroke-width="1.6" stroke-dasharray="4 5"/>
+      <path id="pathC" d="M180 66 Q 280 80 298 128" fill="none" stroke="rgba(129,201,255,.36)" stroke-width="1.6" stroke-dasharray="4 5"/>
+      <g id="nodeM">
+        <rect class="ring" id="ringM" x="110" y="8" width="140" height="58" rx="12" stroke="#fbbf24"/>
+        <rect class="node-rect" id="rectM" x="110" y="8" width="140" height="58" rx="12" fill="#172638" stroke="#fbbf24" stroke-width="1.6"/>
+        <text x="180" y="30" text-anchor="middle" fill="#fde68a" font-size="12" font-weight="700" letter-spacing="1.5">MASTER</text>
+        <text x="180" y="45" text-anchor="middle" fill="#94a3b8" font-size="9.5">SoftAP 192.168.4.1</text>
+        <text x="180" y="58" text-anchor="middle" fill="#9aabc0" font-size="8.5" id="mSub">dispatcher · supervisor</text>
+      </g>
+      <g id="nodeA">
+        <rect class="ring" id="ringA" x="9" y="128" width="106" height="56" rx="10" stroke="#63dac4"/>
+        <rect class="node-rect" id="rectA" x="9" y="128" width="106" height="56" rx="10" fill="#172638" stroke="#63dac4" stroke-width="1.6"/>
+        <text x="62" y="149" text-anchor="middle" fill="#99f6e4" font-size="11" font-weight="700" letter-spacing=".8">WORKER A</text>
+        <text x="62" y="163" text-anchor="middle" fill="#a7b6c8" font-size="9" id="ipA">Awaiting connection</text>
+        <text x="62" y="176" text-anchor="middle" fill="#a7b6c8" font-size="8.5" id="subA">WAITING</text>
+      </g>
+      <g id="nodeB">
+        <rect class="ring" id="ringB" x="127" y="128" width="106" height="56" rx="10" stroke="#baaaff"/>
+        <rect class="node-rect" id="rectB" x="127" y="128" width="106" height="56" rx="10" fill="#172638" stroke="#baaaff" stroke-width="1.6"/>
+        <text x="180" y="149" text-anchor="middle" fill="#ddd6fe" font-size="11" font-weight="700" letter-spacing=".8">WORKER B</text>
+        <text x="180" y="163" text-anchor="middle" fill="#a7b6c8" font-size="9" id="ipB">Awaiting connection</text>
+        <text x="180" y="176" text-anchor="middle" fill="#a7b6c8" font-size="8.5" id="subB">WAITING</text>
+      </g>
+      <g id="nodeC">
+        <rect class="ring" id="ringC" x="245" y="128" width="106" height="56" rx="10" stroke="#81c9ff"/>
+        <rect class="node-rect" id="rectC" x="245" y="128" width="106" height="56" rx="10" fill="#172638" stroke="#81c9ff" stroke-width="1.6"/>
+        <text x="298" y="149" text-anchor="middle" fill="#bbdfff" font-size="11" font-weight="700" letter-spacing=".8">WORKER C</text>
+        <text x="298" y="163" text-anchor="middle" fill="#a7b6c8" font-size="9" id="ipC">Awaiting connection</text>
+        <text x="298" y="176" text-anchor="middle" fill="#a7b6c8" font-size="8.5" id="subC">WAITING</text>
+      </g>
+      <g id="packets"></g>
+      <text x="180" y="201" text-anchor="middle" fill="#a7b6c8" font-size="8.5"><tspan fill="#82c9fd">● Dispatch</tspan><tspan fill="#77e0ac"> &#160; ● Result</tspan><tspan fill="#baaaff"> &#160; ● Heartbeat</tspan></text>
+    </svg>
+    <div class="nodes" id="nodeRows"><span class="muted">Waiting for board telemetry.</span></div>
+  <div class="row node-controls">
+    <button class="btn" id="drainA" aria-pressed="false" disabled>Drain Worker A</button>
+    <button class="btn" id="drainB" aria-pressed="false" disabled>Drain Worker B</button>
+    <button class="btn" id="drainC" aria-pressed="false" disabled>Drain Worker C</button>
+  </div>
+  </section>
+
+  <!-- ===== Fractal ===== -->
+  <section class="panel frac">
+    <div class="ph"><h2>Mandelbrot render</h2><span class="chip">150 tile jobs</span><span class="sp"></span>
+      <button class="btn" id="btnMap" aria-pressed="false">Worker overlay</button><button class="btn" id="btnAuto" aria-pressed="false" disabled>Auto-zoom</button></div>
+    <div class="stage" id="stage" role="button" tabindex="0" aria-disabled="true" aria-label="Zoom Mandelbrot fractal. Press Enter to zoom at the center.">
+      <canvas id="fcv" width="600" height="400" aria-hidden="true"></canvas>
+      <canvas id="ocv" width="600" height="400" aria-hidden="true"></canvas>
+      <p class="stage-message" id="stageMessage">Waiting for the master to send a frame.</p><div class="hud"><span id="hudFrame">Frame —</span><span id="hudTiles">0 / 150 tiles</span><span id="hudZoom">Zoom —</span></div>
+    </div>
+    <div class="prog" id="frameProgress" role="progressbar" aria-label="Mandelbrot frame progress" aria-valuemin="0" aria-valuemax="150" aria-valuenow="0"><i id="fprog"></i></div>
+    <div class="row" style="justify-content:space-between">
+      <div class="legend"><span><i style="background:var(--wA)"></i>Worker A</span><span><i style="background:var(--wB)"></i>Worker B</span><span><i style="background:var(--wC)"></i>Worker C</span><span><i style="background:var(--wM)"></i>Master</span><span><i style="background:#ef4444"></i>Requeued</span></div>
+      <div class="muted" style="font-size:11px" id="fstat">Select the image to zoom.</div>
+    </div>
+  </section>
+
+  <!-- ===== Job board ===== -->
+  <section class="panel board" id="jobBoard">
+    <div class="ph"><h2>Job lifecycle</h2></div>
+    <div class="cols">
+      <div class="col"><h3>Queued <b id="cQ">0</b></h3><div id="colQ" class="job-list"></div></div>
+      <div class="col"><h3>Running <b id="cR">0</b></h3><div id="colR" class="job-list"></div></div>
+      <div class="col"><h3>Completed <b id="cD">0</b></h3><div id="colD" class="job-list"></div></div>
+      <div class="col"><h3>Failed <b id="cF">0</b></h3><div id="colF" class="job-list"></div></div>
+    </div>
+  </section>
+
+  <!-- ===== Scheduler ===== -->
+  <section class="panel sched">
+    <div class="ph"><h2>Scheduler</h2></div>
+    <div class="row" style="margin-bottom:8px">
+      <span class="muted" style="width:62px;font-size:11px">Ordering</span>
+      <div class="seg" id="segOrd"><button data-v="0">FCFS</button><button data-v="1">Priority</button><button data-v="2" class="on">Priority + aging</button></div>
+    </div>
+    <div class="row" style="margin-bottom:8px">
+      <span class="muted" style="width:62px;font-size:11px">Placement</span>
+      <div class="seg" id="segPl"><button data-v="0">Round-robin</button><button data-v="1" class="on">Least-loaded</button></div>
+    </div>
+    <div class="muted" style="font-size:10.5px;margin-bottom:2px">Oldest queued job by priority over the last minute</div>
+    <canvas class="chart" id="chWait" role="img" aria-label="Line chart of oldest queue wait, in seconds, for priorities zero through three"></canvas>
+    <div class="stats">
+      <div class="stat"><span>Oldest wait</span><b id="sStarve">0</b></div>
+      <div class="stat"><span>Mean wait</span><b id="sWait">–</b></div>
+      <div class="stat"><span>Jobs / s</span><b id="sThr">0</b></div>
+    </div>
+  </section>
+
+  <!-- ===== OS monitor ===== -->
+  <section class="panel os" id="monitor">
+    <div class="ph"><h2>FreeRTOS monitor</h2><span class="chip">Sampled task state</span><span class="sp"></span>
+      <div class="seg tabs" id="segNode"><button data-v="0">Master</button><button data-v="1" class="on">Worker A</button><button data-v="2">Worker B</button><button data-v="3">Worker C</button></div></div>
+    <div class="cores" id="coreCards"><div class="core"><span>Core 0</span><b id="c0">—</b><div class="bar"><i id="c0b" style="width:0"></i></div></div>
+      <div class="core" id="coreOne"><span>Core 1</span><b id="c1">—</b><div class="bar"><i id="c1b" style="width:0"></i></div></div></div>
+    <div id="taskWrap" class="table-scroll" tabindex="0" aria-label="Task samples"><span class="muted">Waiting for a task sample.</span></div>
+  </section>
+
+  <!-- ===== Primitives ===== -->
+  <section class="panel prim">
+    <div class="ph"><h2>Queue &amp; execution slots</h2></div>
+    <div class="kv"><span>Master job queue</span><b id="pQ">0 / 256</b></div>
+    <div class="buf" id="buf"></div>
+    <div class="kv">
+      <span>Queue places free / occupied</span><b id="pSem">—</b>
+      <span>Mutex acquisitions / second</span><b id="pHold">–</b>
+      <span>Mutex acquisitions / contended</span><b id="pLock">0 · 0%</b>
+      <span>producers blocked (queue full)</span><b id="pBlk">0</b>
+    </div>
+    <div class="sub">
+      <h4>Execution permits</h4>
+      <div id="semRows"></div>
+      <div class="dim" style="font-size:10px">Outlined: permits. Filled: active jobs. Hatched: active jobs beyond available cores.</div>
+    </div>
+  </section>
+
+  <!-- ===== Lab + faults ===== -->
+  <section class="panel lab" id="labs">
+    <div class="ph"><h2>Synchronization lab</h2><span class="sp"></span>
+      <label class="muted" for="labTarget">Board</label><select id="labTarget"><option value="-1">Auto</option><option value="0">Master</option><option value="1">Worker A</option><option value="2">Worker B</option><option value="3">Worker C</option></select>
+      <span class="muted" style="font-size:12px" id="labWhere"></span></div>
+    <div class="labgrid">
+      <div class="exps">
+        <div class="exp"><h3>A · Lost update</h3><p>2 tasks, one per core, each add 100 000 to a shared counter — no lock.</p><button class="btn" disabled data-lab="A">Run</button><div class="res" id="labA"></div></div>
+        <div class="exp"><h3>B · Mutex fix</h3><p>Same loop, the increment is a critical section guarded by a mutex.</p><button class="btn" disabled data-lab="B">Run</button><div class="res" id="labB"></div></div>
+        <div class="exp"><h3>C · Semaphore cap</h3><p>6 tasks share a semaphore with 2 permits (60 jobs). Peak holders must never exceed 2.</p><button class="btn" disabled data-lab="C">Run</button><div class="res" id="labC"></div></div>
+        <div class="exp"><h3>D · Priority inversion</h3><p>L holds a lock, H waits, M runs. Binary semaphore vs mutex (inheritance).</p><button class="btn" disabled data-lab="D">Run</button><div class="res" id="labD"></div></div>
+      </div>
+      <div>
+        <h3 style="font-size:13px;margin:0 0 7px">Fault injection &amp; recovery</h3><div class="faults">
+          <button class="btn red" id="fKillA">Crash Worker A (restart)</button>
+          <button class="btn red" id="fKillB">Crash Worker B (restart)</button>
+          <button class="btn red" id="fKillC">Crash Worker C (restart)</button>
+          <button class="btn amb" id="fRun">Submit runaway job</button>
+          <button class="btn" id="fStorm">High-priority storm (8 s)</button>
+          <button class="btn" id="fLocal">Single-node mode: off</button>
+        </div>
+        <div class="row" style="margin-top:8px">
+          <label class="muted" for="faultTarget">Network glitch</label><select id="faultTarget"><option value="1">Worker A</option><option value="2">Worker B</option><option value="3">Worker C</option></select>
+          <button class="btn amb" id="fPart">Mute for 4 s</button>
+        </div>
+        <div class="row" style="margin-top:8px;font-size:11px"><label class="muted" for="rClients" style="width:120px">Client producer tasks</label><input type="range" id="rClients" min="0" max="4" value="1" style="flex:1"><b id="vClients" style="width:14px">1</b></div>
+        <div class="rec" id="recov">No worker failure recorded.</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel bench" id="benchmarks">
+    <div class="ph"><h2>Hardware benchmarks</h2><span class="sp"></span><span id="expStat" class="muted" role="status">Waiting for telemetry.</span></div>
+    <p class="muted" style="font-size:12px;margin:0 0 8px">T1–T3 use Workers A and B. T4 uses all three workers. T5 compares master-only execution with one, two, and three workers.</p>
+    <div class="row">
+      <button class="btn" disabled data-exp="1">T1 Scheduling</button><button class="btn" disabled data-exp="2">T2 Correctness</button>
+      <button class="btn" disabled data-exp="3">T3 Recovery</button><button class="btn" disabled data-exp="4">T4 Slots</button>
+      <button class="btn" disabled data-exp="5">T5 Scaling</button><button class="btn red" id="expStop" disabled>Stop</button>
+    </div>
+    <div class="sub row">
+      <label for="benchMetric" class="muted">Compare runs</label>
+      <select id="benchMetric"><option value="3">Throughput (jobs/s)</option><option value="5">p95 latency (ms)</option></select>
+      <select id="benchSuite" aria-label="Filter benchmark suite"><option value="0">All suites</option><option value="1">T1 Scheduling</option><option value="2">T2 Correctness</option><option value="3">T3 Recovery</option><option value="4">T4 Slots</option><option value="5">T5 Scaling</option></select>
+      <span id="benchCount" class="muted"></span>
+      <span class="sp" style="flex:1"></span>
+      <a class="btn" href="/api/runs.csv" download>Runs CSV</a><a class="btn" href="/api/csv" download>Jobs CSV</a>
+    </div>
+    <div id="benchChart" class="bench-chart"></div>
+    <p id="benchEmpty" class="muted">Run a suite on the boards to populate the comparison.</p>
+    <div id="expRuns" class="table-scroll" tabindex="0" aria-label="Benchmark results"></div>
+  </section>
+
+  <!-- ===== Logger ===== -->
+  <section class="panel logp">
+    <div class="ph"><h2>Event log</h2><span class="sp"></span><span class="muted" style="font-size:10.5px" id="logq">log queue 0/64 · drops 0</span></div>
+    <div class="log" id="log" tabindex="0" aria-label="Cluster event log"><div class="muted" id="logEmpty">Waiting for events.</div></div>
+  </section>
+</main>
+
+<script>
+'use strict';
+/* =====================================================================
+   NEXUS Control Center — live dashboard.
+   State arrives from the master over WebSocket (/ws), fractal tile pages
+   come from /api/tiles, and controls send commands to /api/cmd.
+   The browser only draws: every number comes from the boards.
+   ===================================================================== */
+const selectors = new Map();
+function $(selector) {
+  if (!selectors.has(selector)) selectors.set(selector, document.querySelector(selector));
+  return selectors.get(selector);
+}
+const htmlCache = new WeakMap();
+function html(selector, value) {
+  const el = $(selector);
+  if (htmlCache.get(el) === value) return;
+  el.innerHTML = value;
+  htmlCache.set(el, value);
+}
+function txt(selector, value) {
+  const el = $(selector), text = String(value);
+  if (el.textContent !== text) el.textContent = text;
+}
+const esc = value => String(value ?? '').replace(/[&<>"\x27]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
+const FW = 600, FH = 400, TW = 40, TH = 40, TC = 15, TR = 10, TILE_PIXELS = TW * TH, TILE_RECORD = TILE_PIXELS + 4;
+const NCOL = ['#ffcb76', '#63dac4', '#baaaff', '#81c9ff'];
+const PCOL = ['#a1aec0', '#77cdfa', '#c2afff', '#ffa3cc'];
+const NNAME = ['Master', 'Worker A', 'Worker B', 'Worker C'];
+const NSHORT = ['M', 'A', 'B', 'C'];
+const WORKERS = [1, 2, 3];
+const SLOT_ORDER = [...WORKERS, 0];
+const TYPE = { 1: 'TILE', 2: 'MATMUL', 3: 'SPIN' };
+const TSTATE = ['RUN', 'RDY', 'BLK', 'SUS', 'BLK'];
+const TSTATE_TXT = { RUN: 'RUNNING', RDY: 'READY', BLK: 'BLOCKED', SUS: 'SUSPENDED' };
+const MOTION = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+let S = null, P = null;                 /* current and previous state */
+let selNode = 1, lastLog = 0, pendingState = null, stateRaf = 0;
+const waitHist = [[], [], [], []];
+let lastHist = -Infinity;
+
+/* ---------------- commands ---------------- */
+let commandTimer;
+function notice(text, error = false) {
+  const el = $('#commandStatus');
+  el.classList.toggle('error', error);
+  el.textContent = text;
+  clearTimeout(commandTimer);
+  commandTimer = setTimeout(() => { el.textContent = ''; }, error ? 5500 : 2200);
+}
+async function cmd(op, args) {
+  if (!wsUp || !S) return false;
+  if (S.exp?.busy && op !== 'expstop') {
+    notice('The experiment has exclusive control of the cluster.', true);
+    return false;
+  }
+  try {
+    const q = new URLSearchParams(Object.assign({ op }, args || {}));
+    const response = await fetch('/api/cmd?' + q, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+    const text = await response.text();
+    if (!response.ok || text.trim() !== 'ok') throw new Error(text.trim() || 'Command was rejected.');
+    notice('Command accepted.');
+    return true;
+  } catch (err) {
+    notice(err.name === 'TimeoutError' ? 'The master did not respond to the command.' : (err.message || 'Command failed.'), true);
+    return false;
+  }
+}
+
+/* ---------------- connection ---------------- */
+let ws = null, wsUp = false, retry = 700, reconnectTimer, heartbeatTimer;
+function setConn(up, label, message = '') {
+  wsUp = up;
+  txt('#conn', label);
+  $('#conn').classList.toggle('up', up);
+  $('#connectionNotice').hidden = !message;
+  txt('#connectionNotice', message);
+  syncControls();
+}
+function enqueueState(snapshot) {
+  if (!snapshot?.nodes || !snapshot.q || !snapshot.fr || !snapshot.st) return;
+  pendingState = snapshot;
+  if (!stateRaf) stateRaf = requestAnimationFrame(() => {
+    stateRaf = 0;
+    if (pendingState) { const current = pendingState; pendingState = null; applyState(current); }
+  });
+}
+function connect() {
+  if (location.protocol === 'file:') {
+    setConn(false, 'File preview', 'Connect to NEXUS-OS and open http://192.168.4.1 for board data.');
+    return;
+  }
+  if (document.hidden || ws) return;
+  const scheme = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  const socket = new WebSocket(scheme + '//' + location.host + '/ws');
+  ws = socket;
+  const arm = () => {
+    clearTimeout(heartbeatTimer);
+    heartbeatTimer = setTimeout(() => socket.close(), 4500);
+  };
+  socket.onopen = arm;
+  socket.onmessage = event => {
+    try {
+      const data = JSON.parse(event.data);
+      if (!data?.nodes || !data.q || !data.fr || !data.st) return;
+      retry = 700;
+      if (!wsUp) setConn(true, 'Live');
+      arm();
+      enqueueState(data);
+    } catch (err) { console.warn('Invalid NEXUS telemetry', err); }
+  };
+  socket.onclose = () => {
+    if (ws !== socket) return;
+    ws = null;
+    clearTimeout(heartbeatTimer);
+    if (document.hidden) return;
+    setConn(false, 'Reconnecting', S ? 'Connection lost. Values are from the last received update.' : 'Waiting for the master. Check that this device is on NEXUS-OS.');
+    reconnectTimer = setTimeout(connect, retry);
+    retry = Math.min(retry * 2, 8000);
+  };
+  socket.onerror = () => socket.close();
+}
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) {
+    clearTimeout(reconnectTimer);
+    wsUp = false;
+    ws?.close();
+  } else if (!ws) {
+    setConn(false, 'Connecting');
+    connect();
+  }
+});
+
+/* ---------------- fractal ---------------- */
+const fcv = $('#fcv'), fctx = fcv.getContext('2d'), ocv = $('#ocv'), octx = ocv.getContext('2d');
+const PAL = (() => {
+  const st = [[0, [0, 7, 100]], [0.16, [32, 107, 203]], [0.42, [237, 255, 255]], [0.6425, [255, 170, 0]], [0.8575, [0, 2, 0]], [1, [0, 7, 100]]];
+  const p = new Uint8Array(1024 * 3);
+  for (let i = 0; i < 1024; i++) {
+    const t = i / 1024; let k = 0; while (t > st[k + 1][0]) k++;
+    const [t0, c0] = st[k], [t1, c1] = st[k + 1], f = (t - t0) / (t1 - t0);
+    for (let c = 0; c < 3; c++) p[i * 3 + c] = c0[c] + (c1[c] - c0[c]) * f;
+  }
+  return p;
+})();
+let frameNo = -1, tileVer = 0, fetching = false, tilePageTimer = 0;
+const tileDoneAt = new Map();
+const tileColors = new Uint8Array(256 * 3);
+for (let v = 0; v < 255; v++) {
+  const i = (Math.floor(Math.sqrt(v / 254) * 2047) % 1024) * 3;
+  tileColors.set(PAL.subarray(i, i + 3), v * 3);
+}
+tileColors.set([7, 13, 25], 255 * 3);
+const tileImage = fctx.createImageData(TW, TH);
+const tilePrio = Array.from({ length: TC * TR }, (_, i) => {
+  const dx = ((i % TC) + .5) / TC - .5, dy = ((Math.floor(i / TC) + .5) / TR - .5) * FH / FW;
+  const d = Math.hypot(dx, dy) / .6;
+  return d < .22 ? 3 : d < .45 ? 2 : d < .7 ? 1 : 0;
+});
+function clearFrame() {
+  fctx.fillStyle = '#070f1a';
+  fctx.fillRect(0, 0, FW, FH);
+  tileDoneAt.clear();
+  tileVer = 0;
+  requestDraw(true);
+}
+function drawTile(t, px) {
+  const d = tileImage.data;
+  for (let i = 0; i < TILE_PIXELS; i++) {
+    const src = px[i] * 3, dst = i * 4;
+    d[dst] = tileColors[src];
+    d[dst + 1] = tileColors[src + 1];
+    d[dst + 2] = tileColors[src + 2];
+    d[dst + 3] = 255;
+  }
+  fctx.putImageData(tileImage, (t % TC) * TW, Math.floor(t / TC) * TH);
+}
+async function fetchTiles() {
+  if (fetching || tilePageTimer || !S || tileVer >= S.fr.ver || document.hidden) return;
+  const requestedFrame = frameNo, requestedVersion = tileVer;
+  fetching = true;
+  let advanced = false;
+  try {
+    const response = await fetch('/api/tiles?since=' + requestedVersion, { cache: 'no-store', signal: AbortSignal.timeout(5000) });
+    if (!response.ok) return;
+    const buf = await response.arrayBuffer();
+    if (buf.byteLength < 8) return;
+    const dv = new DataView(buf), frame = dv.getUint16(0, true), ver = dv.getUint32(2, true), n = dv.getUint16(6, true);
+    if (requestedFrame !== frameNo || frame !== frameNo || ver < requestedVersion || buf.byteLength !== 8 + n * TILE_RECORD) return;
+    const now = performance.now();
+    for (let off = 8; off < buf.byteLength; off += TILE_RECORD) {
+      const tile = dv.getUint16(off, true), owner = dv.getUint8(off + 2);
+      if (tile >= TC * TR) continue;
+      drawTile(tile, new Uint8Array(buf, off + 4, TILE_PIXELS));
+      if (!MOTION.matches) tileDoneAt.set(tile, { at: now, owner: owner - 1 });
+    }
+    advanced = ver > tileVer;
+    tileVer = ver;
+    if (n) requestDraw(true);
+  } catch (_err) {
+    // A later state frame retries the same watermark.
+  } finally {
+    fetching = false;
+    if (advanced && S && tileVer < S.fr.ver) {
+      tilePageTimer = setTimeout(() => { tilePageTimer = 0; fetchTiles(); }, 30);
+    }
+  }
+}
+
+/* ---------------- message animation on the map ---------------- */
+const svgNS = 'http://www.w3.org/2000/svg', pk = $('#packets');
+const points = [null, ...WORKERS.map(i => {
+  const path = $('#path' + NSHORT[i]), length = path.getTotalLength();
+  return Array.from({ length: 33 }, (_, i) => path.getPointAtLength(length * i / 32));
+})];
+const packets = [];
+function spawn(node, reverse, color, radius, delay) {
+  if (packets.length >= 24) return;
+  const el = document.createElementNS(svgNS, 'circle');
+  el.setAttribute('r', radius);
+  el.setAttribute('fill', color);
+  el.setAttribute('cx', -10);
+  pk.appendChild(el);
+  packets.push({ node, reverse, t0: performance.now() + delay, el });
+}
+function stepPackets(t) {
+  for (let i = packets.length - 1; i >= 0; i--) {
+    const p = packets[i], fraction = (t - p.t0) / 320;
+    if (fraction < 0) continue;
+    if (fraction >= 1 || !mapVisible || MOTION.matches) { p.el.remove(); packets.splice(i, 1); continue; }
+    const a = (p.reverse ? 1 - fraction : fraction) * 32;
+    const first = Math.min(31, Math.floor(a)), weight = a - first, path = points[p.node];
+    p.el.setAttribute('cx', path[first].x * (1 - weight) + path[first + 1].x * weight);
+    p.el.setAttribute('cy', path[first].y * (1 - weight) + path[first + 1].y * weight);
+  }
+}
+function pulse(id) {
+  const ring = $('#ring' + id);
+  ring.classList.remove('go');
+  requestAnimationFrame(() => ring.classList.add('go'));
+}
+function animateTraffic(s, p) {
+  if (!p || !mapVisible || MOTION.matches || document.hidden) return;
+  for (const i of WORKERS) {
+    const a = s.nodes[i], b = p.nodes[i];
+    if (!a || !b) continue;
+    const nd = Math.min(2, Math.max(0, a.disp - b.disp)), nr = Math.min(2, Math.max(0, a.res - b.res));
+    for (let j = 0; j < nd; j++) spawn(i, false, '#82c9fd', 3.1, j * 80);
+    for (let j = 0; j < nr; j++) spawn(i, true, '#77e0ac', 3.1, j * 80);
+    if (a.st === 1 && a.hb >= 0 && b.hb >= 0 && a.hb < b.hb) { spawn(i, true, '#baaaff', 2.3, 0); pulse(NSHORT[i]); }
+  }
+  if (packets.length) requestDraw();
+}
+
+/* ---------------- rendering helpers ---------------- */
+function nodeState(i, n) {
+  if (i === 0) return S.local ? 'LOCAL' : 'COORDINATOR';
+  if (!n) return 'UNCONFIGURED';
+  if (n.st === 1 && (n.drain || S.local)) return 'DRAINING';
+  return ['WAITING', 'ONLINE', 'SUSPECT', 'OFFLINE'][n.st] || 'WAITING';
+}
+function slotCells(n, color, big) {
+  let h = '';
+  const run = n.run || 0, cores = n.cores || 2, count = clamp(n.n || 4, 1, 4);
+  for (let s = 0; s < count; s++) {
+    const busy = s < run, over = busy && s >= cores;
+    h += `<span class="slot ${s < n.k ? 'perm' : ''} ${busy ? (over ? 'over' : 'busy') : ''}" style="color:${color}${big ? ';width:22px;height:12px' : ''}"></span>`;
+  }
+  return h;
+}
+function card(kind, j) {
+  const type = TYPE[j.type] || '?';
+  const what = j.type === 1 ? `TILE ${j.tx},${j.ty}` : type;
+  let right = '', color = PCOL[j.prio] || '#94a3b8';
+  if (kind === 'Q') { right = `P${j.eff}${j.eff > j.prio ? '↑' : ''}${j.att > 1 ? ' · att ' + j.att : ''}`; }
+  if (kind === 'R') { color = NCOL[j.node] || '#fff'; right = `${NSHORT[j.node] || '?'} · ${j.state === 2 ? 'sent' : 'running'}${j.att > 1 ? ' · att ' + j.att : ''}`; }
+  if (kind === 'D') { color = NCOL[j.node]; right = `${NSHORT[j.node]} · ${j.lat} ms`; }
+  if (kind === 'F') { right = `${j.att} attempts`; color = '#f87171'; }
+  return `<div class="card p${j.prio}"><b>#${j.id}</b><em>${what}</em><i style="color:${color}">${right}</i></div>`;
+}
+function renderCol(sel, kind, list, total, cntSel) {
+  const label = { Q: 'Queue empty', R: 'No jobs dispatched', D: 'No commits yet', F: 'No failures' }[kind];
+  const cards = list.slice(0, 5).map(j => card(kind, j)).join('');
+  const more = total > 5 ? `<div class="more">+ ${total - Math.min(5, list.length)} more</div>` : '';
+  html(sel, cards + more || `<div class="more">${label}</div>`);
+  txt(cntSel, total);
+}
+function waitsOn(name, st) {
+  if (st === 'RUN' || st === 'RDY') return '–';
+  if (name.startsWith('exec_')) return 'sem_ready / sem_slots';
+  if (name.startsWith('link_rx')) return 'socket recv';
+  if (name.startsWith('link_tx')) return 'tx_queue';
+  if (name.startsWith('client_')) return 'delay / sem_free';
+  const m = { logger: 'log_queue', dispatcher: 'sem_ready / credits', supervisor: 'delay 100 ms', monitor: 'delay 500 ms',
+    telemetry: 'delay 100 ms', httpd: 'socket select', listener: 'accept', frames: 'frame requests', wifi: 'Wi-Fi events',
+    tiT: 'lwIP mailbox', esp_timer: 'timer events', ipc0: 'IPC', ipc1: 'IPC', sys_evt: 'event loop', main: '–' };
+  if (name.startsWith('lab')) return 'lab experiment';
+  if (name.startsWith('IDLE')) return '–';
+  return m[name] || '–';
+}
+function fmtUs(us) { return us >= 1000 ? (us / 1000).toFixed(us >= 100000 ? 0 : 1) + ' ms' : us + ' µs'; }
+
+/* ---------------- state rendering ---------------- */
+function setPressed(el, on) {
+  el.classList.toggle('on', on);
+  el.setAttribute('aria-pressed', String(on));
+}
+function syncSegments(id, value) {
+  document.querySelectorAll(id + ' button').forEach(b => setPressed(b, Number(b.dataset.v) === value));
+}
+function syncControls() {
+  const locked = !wsUp || !S || !!S.exp?.busy;
+  document.querySelectorAll('#segOrd button,#segPl button,#btnAuto,#fRun,#fStorm,#fLocal,#rClients,[data-exp]').forEach(b => { b.disabled = locked; });
+  const selectedLab = labNode();
+  document.querySelectorAll('[data-lab]').forEach(b => { b.disabled = locked || (selectedLab !== 0 && S.nodes[selectedLab]?.st !== 1); });
+  $('#expStop').disabled = !wsUp || !S?.exp?.busy;
+  $('#stage').setAttribute('aria-disabled', String(locked));
+  for (const i of WORKERS) {
+    const inactive = locked || S.nodes[i]?.st !== 1;
+    $('#fKill' + NSHORT[i]).disabled = inactive;
+    $('#drain' + NSHORT[i]).disabled = inactive || !!S.local;
+  }
+  $('#fPart').disabled = locked || S.nodes[Number($('#faultTarget').value)]?.st !== 1;
+  document.querySelectorAll('#semRows button').forEach(b => {
+    const i = Number(b.dataset.k), n = S?.nodes[i], step = Number(b.dataset.d);
+    b.disabled = locked || !n || (i === 0 ? !S.local : n.st !== 1) ||
+      (n.slots_ready !== undefined && !n.slots_ready) || n.k + step < 1 || n.k + step > (n.n || 4);
+  });
+}
+function renderNodes(s) {
+  for (const i of WORKERS) {
+    const n = s.nodes[i], id = NSHORT[i], st = nodeState(i, n);
+    const color = st === 'OFFLINE' ? '#ff949b' : st === 'SUSPECT' ? '#ffcb76' : !n || st === 'WAITING' ? '#4b5e72' : NCOL[i];
+    const rect = $('#rect' + id);
+    rect.setAttribute('stroke', color);
+    rect.style.opacity = st === 'ONLINE' || st === 'DRAINING' ? 1 : .65;
+    txt('#ip' + id, n?.st ? n.ip : n ? 'Awaiting connection' : 'Not configured');
+    txt('#sub' + id, st === 'ONLINE' ? (n.run || 0) + ' running · K=' + n.k : st);
+    $('#sub' + id).setAttribute('fill', st === 'OFFLINE' || st === 'SUSPECT' ? color : '#a7b6c8');
+    txt('#drain' + id, (n?.drain ? 'Resume ' : 'Drain ') + NNAME[i]);
+    setPressed($('#drain' + id), !!n?.drain);
+  }
+  txt('#mSub', s.local ? 'Master only · ' + (s.nodes[0].run || 0) + ' running' : 'dispatcher · supervisor');
+  html('#nodeRows', s.nodes.map((n, i) => {
+    const st = nodeState(i, n), color = NCOL[i], available = i === 0 || n.st === 1 || n.st === 2;
+    const age = n.hb >= 0 ? ' · HB ' + (Math.floor(n.hb / 100) / 10).toFixed(1) + ' s' : '';
+    const chip = n.chip && n.chip !== 'unknown' ? esc(n.chip) : (i === 0 ? 'ESP32-S3' : '—');
+    const cap = n.cores ? ' · ' + n.cores + (n.cores === 1 ? ' core' : ' cores') : '';
+    const cpu = available ? (n.cpu || []) : [];
+    const bars = cpu.slice(0, n.cores || 2).map((load, core) => `<span>CPU ${core}</span><span class="bar"><i style="width:${clamp(load, 0, 100)}%"></i></span><span>${load}%</span>`).join('');
+    const details = available ? `<div class="details"><span class="slots">${slotCells(n, color)}</span><span>K ${n.k}/${n.n}</span>${n.target_k !== undefined && n.target_k !== n.k ? '<span>→ ' + n.target_k + ' requested</span>' : ''}
+      <span>${i && (s.local || n.drain) ? 0 : Math.max(0, n.cred || 0)} credits</span>${n.heap ? '<span>' + Math.round(n.heap / 1024) + ' KiB free</span>' : ''}</div>` : '';
+    return `<div class="nrow" data-node="${i}"><div><div class="nm" style="color:${color}">${NNAME[i]}</div><span class="st ${st === 'WAITING' ? 'JOINING' : st}">${st}</span></div>
+      <div><div class="meta">${chip}${cap}${n.mhz ? ' · ' + n.mhz + ' MHz' : ''}</div>
+      <div class="meta">${n.st || i === 0 ? esc(n.ip) : 'No IP'}${i && available ? age : ''}${n.st || i === 0 ? ' · ' + esc(n.mac?.slice(-8) || '') : ''}</div>
+      ${bars ? '<div class="bars">' + bars + '</div>' : ''}${details}</div></div>`;
+  }).join(''));
+}
+function renderJobs(s) {
+  const q = s.q;
+  const top = q.top.map(a => ({ id: a[0], type: a[1], prio: a[2], eff: a[3], att: a[4], tx: a[5], ty: a[6], frame: a[7] }));
+  const run = q.run.map(a => ({ id: a[0], type: a[1], prio: a[2], node: a[3], att: a[4], state: a[5], tx: a[7], ty: a[8], frame: a[9] }));
+  const done = s.st.recent.map(a => ({ id: a[0], type: a[1], prio: a[2], node: a[3], lat: a[4], att: a[5], tx: a[6], ty: a[7] }));
+  const failed = q.failed.map(a => ({ id: a[0], type: a[1], prio: a[2], att: a[3] }));
+  const currentTile = j => j.type === 1 && (j.frame === undefined || j.frame === s.fr.no);
+  S._run = run.filter(currentTile);
+  S._retry = top.filter(j => j.att > 1 && currentTile(j));
+  renderCol('#colQ', 'Q', top, q.n, '#cQ');
+  renderCol('#colR', 'R', run, q.inf, '#cR');
+  renderCol('#colD', 'D', done, s.st.done, '#cD');
+  renderCol('#colF', 'F', failed, q.fail, '#cF');
+}
+function renderFrame(s) {
+  const fr = s.fr;
+  if (fr.no !== frameNo) { frameNo = fr.no; clearFrame(); }
+  if (fr.ver > tileVer) fetchTiles();
+  $('#fprog').style.width = (100 * fr.done / Math.max(1, fr.tot)).toFixed(1) + '%';
+  $('#frameProgress').setAttribute('aria-valuenow', fr.done);
+  $('#frameProgress').setAttribute('aria-valuemax', Math.max(1, fr.tot));
+  txt('#hudFrame', 'Frame ' + fr.no);
+  txt('#hudTiles', fr.done + ' / ' + fr.tot + ' tiles');
+  txt('#hudZoom', fr.tot ? 'Zoom ' + Number(fr.zoom).toFixed(1) + '× · ' + fr.it + ' iter' : 'Zoom —');
+  $('#stageMessage').hidden = !!fr.done;
+  txt('#stageMessage', fr.tot && (s.local || s.nodes.slice(1).some(n => n.st === 1 && !n.drain)) ?
+    'Waiting for the first tile.' : 'Waiting for an available executor. Connect a worker or enable master-only mode.');
+  const by = [0, 0, 0, 0];
+  for (const ch of fr.own) if (ch >= '1' && ch <= '4') by[Number(ch) - 1]++;
+  const split = SLOT_ORDER.filter(i => i < s.nodes.length).map(i => NSHORT[i] + ' ' + by[i]).join(' · ');
+  txt('#fstat', fr.tot ? `${split} · ${fr.done >= fr.tot ? 'Complete' : 'Rendering'} · ${(fr.ms / 1000).toFixed(1)} s` : 'Select the image to zoom.');
+  setPressed($('#btnAuto'), !!s.auto);
+  const key = [fr.no, fr.own, ...s._run.flatMap(j => [j.id, j.att, j.node]), ...s._retry.map(j => j.id)].join('/');
+  if (key !== overlayKey) { overlayKey = key; requestDraw(true); }
+}
+function renderScheduler(s) {
+  syncSegments('#segOrd', s.ord);
+  syncSegments('#segPl', s.plc);
+  const oldest = Math.max(...s.q.old);
+  txt('#sStarve', (oldest / 1000).toFixed(1) + ' s');
+  $('#sStarve').style.color = oldest > 5000 ? 'var(--red)' : '';
+  const waits = s.st.wait.filter(x => x > 0);
+  txt('#sWait', waits.length ? Math.round(waits.reduce((a, b) => a + b, 0) / waits.length) + ' ms' : '—');
+  txt('#sThr', Number(s.st.thr).toFixed(1));
+  if (s.t - lastHist >= 500) {
+    lastHist = s.t;
+    for (let p = 0; p < 4; p++) {
+      waitHist[p].push(s.q.old[p] / 1000);
+      if (waitHist[p].length > 120) waitHist[p].shift();
+    }
+    drawWaitChart();
+  }
+}
+function renderTasks() {
+  if (!S) return;
+  const mn = S.nodes[selNode], online = selNode === 0 || mn?.st === 1 || mn?.st === 2;
+  const cpu = online ? mn?.cpu || [] : [], cores = mn?.cores || cpu.length || 2;
+  $('#coreOne').hidden = cores === 1;
+  $('#coreCards').classList.toggle('single', cores === 1);
+  for (let core = 0; core < 2; core++) {
+    txt('#c' + core, cpu[core] === undefined || core >= cores ? '—' : cpu[core] + '%');
+    $('#c' + core + 'b').style.width = clamp(cpu[core] || 0, 0, 100) + '%';
+  }
+  const rows = (mn?.tasks || []).slice().sort((a, b) => b[2] - a[2] || a[0].localeCompare(b[0]));
+  if (!online || !rows.length) {
+    html('#taskWrap', '<div class="offline-note">' + (online ? 'Waiting for a task sample from ' : 'No current task samples from ') + NNAME[selNode] + '.</div>');
+    return;
+  }
+  html('#taskWrap', `<table class="tt"><thead><tr><th>Task</th><th>State</th><th>Priority</th><th>Core</th><th>Likely wait</th><th>Stack free</th><th>CPU</th></tr></thead><tbody>` +
+    rows.map(r => {
+      const st = TSTATE[r[1]] || 'BLK';
+      return `<tr><td class="n">${esc(r[0])}</td><td><span class="ts ${st}">${TSTATE_TXT[st]}</span></td><td>${r[2]}</td><td>${r[3] < 0 || r[3] >= cores ? '—' : r[3]}</td><td class="muted">${esc(waitsOn(r[0], st))}</td><td class="n">${r[5]} B</td><td><span class="cpu"><i style="width:${clamp(r[4] * cores, 0, 100)}%"></i></span>${r[4]}%</td></tr>`;
+    }).join('') + '</tbody></table>');
+}
+const BUFFER_CELLS = 64;
+function renderPrimitives(s) {
+  const q = s.q, old = P?.q;
+  txt('#pQ', q.n + ' / ' + q.cap);
+  txt('#pSem', (q.cap - q.n) + ' / ' + q.n);
+  const dt = P ? Math.max(.05, (s.t - P.t) / 1000) : 1;
+  const dLock = old ? Math.max(0, q.lock - old.lock) : 0, dCont = old ? Math.max(0, q.cont - old.cont) : 0;
+  txt('#pHold', Math.round(dLock / dt));
+  txt('#pLock', q.lock + ' / ' + (dLock ? Math.round(100 * dCont / dLock) : 0) + '%');
+  txt('#pBlk', s.blocked);
+  const cells = $('#buf').children, per = Math.max(1, q.cap / BUFFER_CELLS);
+  let cell = 0;
+  for (let p = 3; p >= 0; p--) {
+    const n = Math.ceil(q.byp[p] / per);
+    for (let i = 0; i < n && cell < BUFFER_CELLS; i++, cell++) cells[cell].style.background = PCOL[p];
+  }
+  for (; cell < BUFFER_CELLS; cell++) cells[cell].style.background = '';
+  for (const i of SLOT_ORDER) {
+    const n = s.nodes[i], off = i === 0 ? !s.local : n?.st !== 1;
+    html('#slots' + i, slotCells(off ? { n: n?.n, k: 0, run: 0 } : n, NCOL[i], true));
+    txt('#slotInfo' + i, off ? (i === 0 ? 'Local pool idle' : 'Not connected') :
+      `${n.run || 0} active · peak ${n.peak || 0}${n.target_k !== undefined && n.target_k !== n.k ? ' · applying K=' + n.target_k : ''}`);
+  }
+}
+const benchRuns = new Map();
+function renderBenchmarks() {
+  const metric = Number($('#benchMetric').value), suite = Number($('#benchSuite').value);
+  const list = [...benchRuns.values()].filter(r => !suite || r[1] === suite).sort((a, b) => b[0] - a[0]);
+  $('#benchEmpty').hidden = list.length > 0;
+  txt('#benchEmpty', suite ? 'No completed runs for this suite in the browser session.' : 'Run a suite on the boards to populate the comparison.');
+  const groups = new Map();
+  for (const r of (suite ? list : list.slice(0, 12))) {
+    const label = suite ? r[2].replace(/ #\d+$/, '') : r[2];
+    const g = groups.get(label) || { total: 0, count: 0, fail: false };
+    g.total += Number(r[metric] || 0);
+    g.count++;
+    g.fail ||= r[10] === 0;
+    groups.set(label, g);
+  }
+  const max = Math.max(1, ...[...groups.values()].map(g => g.total / g.count));
+  html('#benchChart', [...groups].map(([label, g]) => {
+    const value = g.total / g.count, unit = metric === 3 ? ' jobs/s' : ' ms';
+    return `<div class="bench-bar${g.fail ? ' fail' : ''}"><span>${esc(label)}</span><span class="bar" aria-hidden="true"><i style="width:${100 * value / max}%"></i></span><span><b>${value.toFixed(metric === 3 ? 1 : 0)}${unit}</b>${g.count > 1 ? ' avg · n=' + g.count : ''}</span></div>`;
+  }).join(''));
+  txt('#benchCount', list.length ? list.length + ' observed runs' : '');
+  const byExecutor = list.some(r => Array.isArray(r[15]));
+  const rows = list.slice(0, 18).map(r => {
+    const split = Array.isArray(r[15]) ? r[15].slice(0, NNAME.length).map((n, i) => NSHORT[i] + ' ' + Number(n)).join(' · ') : '—';
+    return `<tr><td class="n">${r[0]}</td><td>${esc(r[2])}</td><td>${Number(r[3]).toFixed(1)}</td><td>${r[5]} ms</td><td>${(r[6] / 1000).toFixed(2)} s</td><td>${r[7]}/${r[8]}</td>${byExecutor ? '<td>' + split + '</td>' : ''}<td>${r[10] === 1 ? '<b style="color:var(--green)">PASS</b>' : r[10] === 0 ? '<b style="color:var(--red)">FAIL</b>' : '—'}${r[11] ? ' · detect ' + r[11] + ' ms' : ''}${r[12] ? ' · ' + r[12] + ' requeued' : ''}${r[13] ? ' · ' + r[13] + ' recovered' : ''}${r[14] ? ' · recovery ' + r[14] + ' ms' : ''}</td></tr>`;
+  }).join('');
+  html('#expRuns', rows ? '<table class="tt"><thead><tr><th>Run</th><th>Setup</th><th>Jobs/s</th><th>p95</th><th>Makespan</th><th>Commits</th>' + (byExecutor ? '<th>By executor</th>' : '') + '<th>Outcome</th></tr></thead><tbody>' + rows + '</tbody></table>' : '');
+}
+function renderEvents(s) {
+  txt('#fLocal', s.local ? 'Master-only mode: on' : 'Master-only mode: off');
+  setPressed($('#fLocal'), !!s.local);
+  if (document.activeElement !== $('#rClients')) { $('#rClients').value = s.cli; txt('#vClients', s.cli); }
+  const f = s.st.fail;
+  html('#recov', f ? `<b>${NNAME[f.node] || 'Worker'}</b> · ${f.det} ms to detect ${f.inj ? 'after fault' : 'after last message'} · <b>${f.req} requeued</b> · ${Math.floor(f.age / 1000)} s ago` : 'No worker failure recorded.');
+  const e = s.exp;
+  txt('#expStat', e?.busy ? `T${e.suite} · run ${e.run}/${e.of} · ${e.label}` : 'Ready to run');
+  let updated = false;
+  for (const r of s.runs || []) {
+    if (r[0] && !benchRuns.has(r[0])) { benchRuns.set(r[0], r); updated = true; }
+  }
+  while (benchRuns.size > 64) benchRuns.delete(benchRuns.keys().next().value);
+  if (updated) renderBenchmarks();
+  for (const l of s.log || []) {
+    if (l[0] <= lastLog) continue;
+    lastLog = l[0];
+    addLog(l[1], l[2], l[3], l[4]);
+  }
+  txt('#logq', `Queue ${s.logq}/64 · ${s.drop} dropped`);
+}
+function applyState(s) {
+  P = S;
+  if (P && s.t < P.t) {
+    P = null;
+    lastLog = 0;
+    frameNo = -1;
+    lastHist = -Infinity;
+    for (const h of waitHist) h.length = 0;
+    benchRuns.clear();
+    renderBenchmarks();
+    $('#log').replaceChildren();
+  }
+  S = s;
+  const nodes = s.nodes;
+  const active = nodes.filter((n, i) => i === 0 ? s.local : !s.local && !n.drain && n.st === 1);
+  const running = nodes.reduce((count, n, i) => count + ((i === 0 || n.st === 1 || n.st === 2) ? n.run || 0 : 0), 0);
+  const permits = active.reduce((count, n) => count + n.k, 0);
+  html('#k-thr', Number(s.st.thr).toFixed(1) + '<small>jobs/s</small>');
+  html('#k-p95', (s.st.done ? s.st.p95 : '—') + '<small>ms</small>');
+  html('#k-q', s.q.n + '<small>/ ' + s.q.cap + '</small>');
+  html('#k-run', running + '<small>/ ' + permits + '</small>');
+  txt('#k-done', s.st.done);
+  txt('#k-ret', s.q.ret + ' / ' + s.st.dup);
+  txt('#k-nodes', 1 + nodes.slice(1).filter(n => n.st === 1).length + '/' + nodes.length + ' nodes');
+  const up = Math.floor(s.t / 1000);
+  txt('#k-up', [Math.floor(up / 3600), Math.floor(up / 60) % 60, up % 60].map(v => String(v).padStart(2, '0')).join(':'));
+  renderNodes(s);
+  animateTraffic(s, P);
+  renderJobs(s);
+  renderFrame(s);
+  renderScheduler(s);
+  renderTasks();
+  renderPrimitives(s);
+  renderLab();
+  renderEvents(s);
+  syncControls();
+}
+
+
+/* ---------------- lab panel ---------------- */
+function labNode() {
+  const selected = Number($('#labTarget').value);
+  return selected >= 0 ? selected : WORKERS.find(i => S?.nodes[i]?.st === 1) ?? 0;
+}
+const labPending = new Map();
+function renderLab() {
+  const i = labNode(), n = S?.nodes[i];
+  const available = i === 0 ? !!S : n?.st === 1;
+  const L = available && n?.lab ? n.lab : [0, 0, 0, 0, 0, 0, 0, 0, 0], mask = L[8];
+  txt('#labWhere', available ? 'Runs on ' + NNAME[i] : NNAME[i] + ' unavailable');
+  const set = (k, bit, result) => {
+    const key = i + k, pending = labPending.get(key);
+    if (available && pending && (performance.now() - pending < 1500 || !(mask & bit))) {
+      html('#lab' + k, 'Waiting for board result…');
+      return;
+    }
+    labPending.delete(key);
+    html('#lab' + k, mask & bit ? result : '');
+  };
+  set('A', 1, `<div class="big" style="color:${L[0] === 200000 ? '#4ade80' : '#f87171'}">${L[0].toLocaleString()}</div><span class="muted">expected 200,000 → <b style="color:#fca5a5">${(200000 - L[0]).toLocaleString()} updates lost</b> · ${fmtUs(L[1])}</span>`);
+  set('B', 2, `<div class="big" style="color:#4ade80">${L[2].toLocaleString()}</div><span class="muted">correct with the mutex · ${fmtUs(L[3])}${mask & 1 ? ' vs ' + fmtUs(L[1]) + ' unlocked' : ''}</span>`);
+  set('C', 4, `<div class="big" style="color:${L[4] <= 2 ? '#4ade80' : '#f87171'}">peak ${L[4]} / 2</div><span class="muted">${L[5]} jobs done · never above the permits</span>`);
+  const mx = Math.max(L[6], L[7], 1);
+  set('D', 8, `<span class="muted">H blocked — binary semaphore</span><div class="tl"><i style="left:0;width:${100 * L[6] / mx}%;background:#f87171"></i></div>
+     <span class="muted">H blocked — mutex (L inherits H)</span><div class="tl"><i style="left:0;width:${100 * L[7] / mx}%;background:#4ade80"></i></div>
+     <span><b style="color:#fca5a5">${fmtUs(L[6])}</b> vs <b style="color:#86efac">${fmtUs(L[7])}</b></span>`);
+}
+
+/* ---------------- logger ---------------- */
+const logEl = $('#log');
+function addLog(ms, tag, lvl, msg) {
+  const stick = logEl.scrollHeight - logEl.scrollTop - logEl.clientHeight < 35;
+  $('#logEmpty')?.remove();
+  const s = Math.floor(ms / 1000), ts = `${String(Math.floor(s / 3600)).padStart(2, '0')}:${String(Math.floor(s / 60) % 60).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}.${String(ms % 1000).padStart(3, '0')}`;
+  const tc = { SUP: '#fbbf24', MST: '#60a5fa', WRK: '#2dd4bf', CLI: '#a78bfa', LAB: '#f472b6', SYS: '#94a3b8', NET: '#38bdf8', EXP: '#34d399' }[tag] || '#94a3b8';
+  const cls = ['', 'ok', 'w', 'e'][lvl] || '';
+  const el = document.createElement('div');
+  el.innerHTML = `<span class="t">${ts}</span><span class="k" style="color:${tc}">${esc(tag)}</span><span class="${cls}"></span>`;
+  el.lastChild.textContent = msg;
+  logEl.appendChild(el);
+  while (logEl.children.length > 150) logEl.firstChild.remove();
+  if (stick) logEl.scrollTop = logEl.scrollHeight;
+}
+
+/* ---------------- chart ---------------- */
+function sizeCanvas(cv) {
+  const r = cv.getBoundingClientRect(), dpr = Math.min(2, window.devicePixelRatio || 1);
+  const w = Math.round(r.width * dpr), h = Math.round(r.height * dpr);
+  if (cv.width !== w || cv.height !== h) { cv.width = w; cv.height = h; }
+  return dpr;
+}
+function drawWaitChart() {
+  const cv = $('#chWait'), dpr = sizeCanvas(cv), c = cv.getContext('2d'), w = cv.width, h = cv.height;
+  c.clearRect(0, 0, w, h);
+  let max = 2; for (const s of waitHist) for (const v of s) max = Math.max(max, v);
+  max = Math.ceil(max / 2) * 2;
+  c.strokeStyle = '#3e5066'; c.lineWidth = 1; c.fillStyle = '#a7b6c8'; c.font = `${10 * dpr}px Segoe UI`;
+  for (let g = 0; g <= 2; g++) { const y = h - 14 * dpr - (h - 22 * dpr) * g / 2; c.beginPath(); c.moveTo(26 * dpr, y); c.lineTo(w, y); c.stroke(); c.fillText((max * g / 2).toFixed(0) + 's', 0, y + 3 * dpr); }
+  const N = 120;
+  waitHist.forEach((s, p) => {
+    if (s.length < 2) return;
+    c.beginPath();
+    s.forEach((v, i) => { const x = 26 * dpr + (w - 26 * dpr) * (i + N - s.length) / (N - 1), y = h - 14 * dpr - (h - 22 * dpr) * v / max; i ? c.lineTo(x, y) : c.moveTo(x, y); });
+    c.strokeStyle = PCOL[p]; c.lineWidth = 1.6 * dpr; c.stroke();
+  });
+  ['P0', 'P1', 'P2', 'P3'].forEach((l, p) => { c.fillStyle = PCOL[p]; c.fillText(l, w - (4 - p) * 26 * dpr, h - 2 * dpr); });
+}
+
+/* ---------------- repaint only while visible and active ---------------- */
+let workerMap = false, overlayKey = null, drawRaf = 0, lastOverlay = -Infinity;
+let mapVisible = true, overlayVisible = true, overlayDirty = true;
+function requestDraw(overlay = false) {
+  overlayDirty ||= overlay;
+  if (!drawRaf && !document.hidden) drawRaf = requestAnimationFrame(frameLoop);
+}
+function drawOverlay(t) {
+  octx.clearRect(0, 0, FW, FH);
+  if (!S) return;
+  octx.strokeStyle = 'rgba(148,163,184,.10)';
+  octx.lineWidth = 1;
+  octx.beginPath();
+  for (let x = TW; x < FW; x += TW) { octx.moveTo(x + .5, 0); octx.lineTo(x + .5, FH); }
+  for (let y = TH; y < FH; y += TH) { octx.moveTo(0, y + .5); octx.lineTo(FW, y + .5); }
+  octx.stroke();
+  const own = S.fr.own;
+  for (let i = 0; i < Math.min(TC * TR, own.length); i++) {
+    const x = (i % TC) * TW, y = Math.floor(i / TC) * TH;
+    if (own[i] === '0') {
+      octx.fillStyle = PCOL[tilePrio[i]]; octx.globalAlpha = .5;
+      octx.fillRect(x + TW / 2 - 1.5, y + TH / 2 - 1.5, 3, 3); octx.globalAlpha = 1;
+    } else if (workerMap && NCOL[+own[i] - 1]) {
+      octx.fillStyle = NCOL[+own[i] - 1]; octx.globalAlpha = .28; octx.fillRect(x, y, TW, TH); octx.globalAlpha = 1;
+    }
+    const d = tileDoneAt.get(i);
+    if (d && t - d.at < 900) {
+      octx.strokeStyle = NCOL[d.owner] || '#fff'; octx.globalAlpha = 1 - (t - d.at) / 900; octx.lineWidth = 2;
+      octx.strokeRect(x + 1, y + 1, TW - 2, TH - 2); octx.globalAlpha = 1;
+    }
+  }
+  for (const j of S._run) {
+    const x = j.tx * TW, y = j.ty * TH, a = MOTION.matches ? .85 : .65 + .35 * Math.sin(t / 135);
+    if (j.att > 1) { octx.fillStyle = 'rgba(239,68,68,.25)'; octx.fillRect(x, y, TW, TH); }
+    octx.globalAlpha = a; octx.strokeStyle = NCOL[j.node] || '#fff'; octx.lineWidth = 2; octx.strokeRect(x + 1, y + 1, TW - 2, TH - 2); octx.globalAlpha = 1;
+  }
+  for (const j of S._retry) {
+    octx.fillStyle = `rgba(239,68,68,${MOTION.matches ? .35 : .28 + .18 * Math.sin(t / 110)})`;
+    octx.fillRect(j.tx * TW, j.ty * TH, TW, TH);
+  }
+}
+function frameLoop(t) {
+  drawRaf = 0;
+  if (document.hidden) return;
+  if (packets.length) stepPackets(t);
+  for (const [i, tile] of tileDoneAt) {
+    if (t - tile.at >= 900 || MOTION.matches) { tileDoneAt.delete(i); overlayDirty = true; }
+  }
+  const animate = overlayVisible && wsUp && !MOTION.matches &&
+    (tileDoneAt.size > 0 || (S?._run.length ?? 0) > 0 || (S?._retry.length ?? 0) > 0);
+  if (overlayVisible && (overlayDirty || (animate && t - lastOverlay >= 40))) {
+    drawOverlay(t);
+    overlayDirty = false;
+    lastOverlay = t;
+  }
+  if (animate || (mapVisible && packets.length)) requestDraw();
+}
+
+/* ---------------- controls ---------------- */
+function seg(id, cb) {
+  $(id).addEventListener('click', e => {
+    const b = e.target.closest('button');
+    if (b && !b.disabled) cb(Number(b.dataset.v));
+  });
+}
+seg('#segOrd', v => cmd('ord', { v }));
+seg('#segPl', v => cmd('plc', { v }));
+seg('#segNode', v => { selNode = v; syncSegments('#segNode', v); renderTasks(); });
+$('#btnMap').onclick = () => { workerMap = !workerMap; setPressed($('#btnMap'), workerMap); requestDraw(true); };
+$('#btnAuto').onclick = () => cmd('auto', { v: S && S.auto ? 0 : 1 });
+$('#stage').addEventListener('click', e => {
+  if ($('#stage').getAttribute('aria-disabled') === 'true') return;
+  const r = e.currentTarget.getBoundingClientRect();
+  cmd('zoom', { x: clamp((e.clientX - r.left) / r.width, 0, 1).toFixed(4), y: clamp((e.clientY - r.top) / r.height, 0, 1).toFixed(4) });
+});
+$('#stage').addEventListener('keydown', e => {
+  if ((e.key !== 'Enter' && e.key !== ' ') || $('#stage').getAttribute('aria-disabled') === 'true') return;
+  e.preventDefault();
+  cmd('zoom', { x: '0.5', y: '0.5' });
+});
+for (const i of WORKERS) {
+  $('#fKill' + NSHORT[i]).onclick = () => cmd('reboot', { node: i });
+  $('#drain' + NSHORT[i]).onclick = () => cmd('drain', { node: i, v: S.nodes[i].drain ? 0 : 1 });
+}
+$('#faultTarget').onchange = syncControls;
+$('#fPart').onclick = () => cmd('mute', { node: Number($('#faultTarget').value), v: 4000 });
+$('#fRun').onclick = () => cmd('runaway');
+$('#fStorm').onclick = () => cmd('storm');
+$('#fLocal').onclick = () => cmd('local', { v: S && S.local ? 0 : 1 });
+$('#rClients').oninput = e => txt('#vClients', e.target.value);
+document.querySelectorAll('[data-exp]').forEach(b => b.onclick = () => cmd('exp', { v: b.dataset.exp }));
+$('#expStop').onclick = () => cmd('expstop');
+$('#benchMetric').onchange = renderBenchmarks;
+$('#benchSuite').onchange = renderBenchmarks;
+$('#rClients').onchange = e => cmd('cli', { v: e.target.value });
+$('#semRows').addEventListener('click', e => {
+  const b = e.target.closest('button');
+  if (!b || !S || b.disabled) return;
+  const i = Number(b.dataset.k), n = S.nodes[i];
+  const k = clamp(n.k + Number(b.dataset.d), 1, n.n || 4);
+  cmd('k', { node: i, v: k });
+});
+document.querySelectorAll('[data-lab]').forEach(b => b.onclick = async () => {
+  const k = b.dataset.lab, idx = 'ABCD'.indexOf(k), node = labNode(), key = node + k;
+  labPending.set(key, performance.now());
+  html('#lab' + k, '<span class="muted">Waiting for board result…</span>');
+  if (!await cmd('lab', { node, v: idx })) {
+    labPending.delete(key);
+    renderLab();
+  }
+});
+$('#labTarget').onchange = () => { renderLab(); syncControls(); };
+
+/* ---------------- boot ---------------- */
+$('#buf').innerHTML = '<i></i>'.repeat(BUFFER_CELLS);
+$('#semRows').innerHTML = SLOT_ORDER.map(i => `<div class="semrow"><span style="color:${NCOL[i]}">${NNAME[i]}</span>
+  <div class="execution"><span class="slots" id="slots${i}"></span><span class="muted" id="slotInfo${i}">—</span></div>
+  <span class="row" style="gap:3px"><button class="mini" data-k="${i}" data-d="-1" aria-label="Decrease ${NNAME[i]} permits">−</button><button class="mini" data-k="${i}" data-d="1" aria-label="Increase ${NNAME[i]} permits">+</button></span></div>`).join('');
+syncSegments('#segNode', selNode);
+syncControls();
+const visibility = new IntersectionObserver(entries => {
+  for (const e of entries) {
+    if (e.target === $('#stage')) overlayVisible = e.isIntersecting;
+    else mapVisible = e.isIntersecting;
+  }
+  requestDraw(true);
+});
+visibility.observe($('#stage'));
+visibility.observe($('#mapsvg'));
+new ResizeObserver(drawWaitChart).observe($('#chWait'));
+MOTION.addEventListener('change', () => requestDraw(true));
+clearFrame();
+connect();
+</script>
+
+</body>
+</html>
